@@ -90,9 +90,9 @@ size_t UnknownFieldSet::SpaceUsedExcludingSelfLong() const {
   for (const UnknownField& field : fields) {
     switch (field.type()) {
       case UnknownField::TYPE_LENGTH_DELIMITED:
-        total_size += sizeof(*field.data_.string_value) +
-                      internal::StringSpaceUsedExcludingSelfLong(
-                          *field.data_.string_value);
+        total_size +=
+            sizeof(*field.data_.string_value) +
+            field.data_.string_value->str.SpaceUsedExcludingSelfLong();
         break;
       case UnknownField::TYPE_GROUP:
         total_size += field.data_.group->SpaceUsedLong();
@@ -130,7 +130,7 @@ void UnknownFieldSet::AddFixed64(int number, uint64_t value) {
 }
 
 void UnknownFieldSet::AddLengthDelimited(int number, const absl::Cord& value) {
-  absl::CopyCordToString(value, AddLengthDelimited(number));
+  AddLengthDelimited(number)->Set(value, arena());
 }
 
 template <int&...>
@@ -138,17 +138,19 @@ void UnknownFieldSet::AddLengthDelimited(int number, std::string&& value) {
   auto& field = *fields().Add();
   field.number_ = number;
   field.SetType(UnknownField::TYPE_LENGTH_DELIMITED);
-  field.data_.string_value =
-      Arena::Create<std::string>(arena(), std::move(value));
+  Arena* a = arena();
+  field.data_.string_value = Arena::Create<UnknownField::StringVariant>(a);
+  field.data_.string_value->str.Set(std::move(value), a);
 }
 template void UnknownFieldSet::AddLengthDelimited(int, std::string&&);
 
-std::string* UnknownFieldSet::AddLengthDelimited(int number) {
+internal::MicroString* UnknownFieldSet::AddLengthDelimited(int number) {
   auto& field = *fields().Add();
   field.number_ = number;
   field.SetType(UnknownField::TYPE_LENGTH_DELIMITED);
-  field.data_.string_value = Arena::Create<std::string>(arena());
-  return field.data_.string_value;
+  field.data_.string_value =
+      Arena::Create<UnknownField::StringVariant>(arena());
+  return &field.data_.string_value->str;
 }
 
 UnknownFieldSet* UnknownFieldSet::AddGroup(int number) {
@@ -251,6 +253,7 @@ bool UnknownFieldSet::SerializeToCord(absl::Cord* output) const {
 void UnknownField::Delete() {
   switch (type()) {
     case UnknownField::TYPE_LENGTH_DELIMITED:
+      data_.string_value->str.Destroy();
       delete data_.string_value;
       break;
     case UnknownField::TYPE_GROUP:
@@ -265,8 +268,8 @@ UnknownField UnknownField::DeepCopy(Arena* arena) const {
   UnknownField copy = *this;
   switch (type()) {
     case UnknownField::TYPE_LENGTH_DELIMITED:
-      copy.data_.string_value =
-          Arena::Create<std::string>(arena, *data_.string_value);
+      copy.data_.string_value = Arena::Create<StringVariant>(arena);
+      copy.data_.string_value->str.Set(data_.string_value->str, arena);
       break;
     case UnknownField::TYPE_GROUP: {
       UnknownFieldSet* group = Arena::Create<UnknownFieldSet>(arena);
@@ -292,7 +295,7 @@ void UnknownFieldSet::SwapSlow(UnknownFieldSet* other) {
 uint8_t* UnknownField::InternalSerializeLengthDelimitedNoTag(
     uint8_t* target, io::EpsCopyOutputStream* stream) const {
   ABSL_DCHECK_EQ(TYPE_LENGTH_DELIMITED, type());
-  const absl::string_view data = *data_.string_value;
+  const absl::string_view data = data_.string_value->str.Get();
   target = io::CodedOutputStream::WriteVarint32ToArray(data.size(), target);
   target = stream->WriteRaw(data.data(), data.size(), target);
   return target;
@@ -313,10 +316,8 @@ class UnknownFieldParserHelper {
   }
   const char* ParseLengthDelimited(uint32_t num, const char* ptr,
                                    ParseContext* ctx) {
-    std::string* s = unknown_->AddLengthDelimited(num);
-    int size = ReadSize(&ptr);
-    GOOGLE_PROTOBUF_PARSER_ASSERT(ptr);
-    return ctx->ReadString(ptr, size, s);
+    auto* s = unknown_->AddLengthDelimited(num);
+    return ctx->ReadMicroString(ptr, *s, s->kInlineCapacity, unknown_->arena());
   }
   const char* ParseGroup(uint32_t num, const char* ptr, ParseContext* ctx) {
     return ctx->ParseGroupInlined(ptr, num * 8 + 3, [&](const char* ptr) {
