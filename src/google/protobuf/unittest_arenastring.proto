@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+package proto2_arenastring_unittest;
+
+option cc_mutable_donated_string = false;
+
+message Proto2 {
+  optional string s = 1;
+  optional bytes b = 2;
+  optional bytes c = 3 [ctype = CORD];
+  required string qs = 4;
+  required bytes qb = 5;
+  required bytes qc = 6 [ctype = CORD];
+  optional string ds = 7 [default = "10086"];
+  optional bytes db = 8 [default = "10010"];
+  optional bytes dc = 9 [default = "10010", ctype = CORD];
+  repeated string rs = 10;
+  repeated bytes rb = 11;
+  oneof o {
+    string ons = 12;
+    bytes onb = 13;
+    bytes onc = 14 [ctype = CORD];
+  }
+  map<string, string> ms = 15;
+  extensions 100 to 199;
+};
+
+message Proto2Extension {
+  extend Proto2 {
+    optional string es = 100;
+    optional bytes eb = 101;
+    repeated string ers = 102;
+    repeated bytes erb = 103;
+  };
+};

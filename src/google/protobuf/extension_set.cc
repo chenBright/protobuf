@@ -526,23 +526,62 @@ const std::string& ExtensionSet::GetString(
     return default_value;
   } else {
     ABSL_DCHECK_TYPE(*extension, OPTIONAL_FIELD, STRING);
-    return *extension->string_value;
+    return *extension->string_value.Get();
   }
 }
 
-std::string* ExtensionSet::MutableString(int number, FieldType type,
-                                         const FieldDescriptor* descriptor) {
+MutableStringType ExtensionSet::MutableString(
+    int number, FieldType type, const FieldDescriptor* descriptor) {
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  return MutableAccessor(number, type, descriptor);
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  Extension* extension;
+  std::string* string;
+  if (MaybeNewExtension(number, descriptor, &extension)) {
+    extension->type = type;
+    ABSL_DCHECK_EQ(cpp_type(extension->type), WireFormatLite::CPPTYPE_STRING);
+    extension->is_repeated = false;
+    string = Arena::Create<std::string>(arena_);
+    if (arena_ != nullptr) {
+      extension->string_value.SetMutableArena(string);
+    } else {
+      extension->string_value.SetAllocated(string);
+    }
+  } else {
+    ABSL_DCHECK_TYPE(*extension, OPTIONAL_FIELD, STRING);
+    string = extension->string_value.Get();
+    if (extension->string_value.IsFixedSizeArena()) {
+      string = Arena::Create<std::string>(arena_, *string);
+      extension->string_value.SetMutableArena(string);
+    }
+  }
+  extension->is_cleared = false;
+  return string;
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+}
+
+MaybeArenaStringAccessor ExtensionSet::MutableAccessor(
+    int number, FieldType type, const FieldDescriptor* descriptor) {
   Extension* extension;
   if (MaybeNewExtension(number, descriptor, &extension)) {
     extension->type = type;
     ABSL_DCHECK_EQ(cpp_type(extension->type), WireFormatLite::CPPTYPE_STRING);
     extension->is_repeated = false;
-    extension->string_value = Arena::Create<std::string>(arena_);
+    auto accessor = MaybeArenaStringAccessor::create(arena_);
+    if (arena_ != nullptr) {
+      extension->string_value.SetFixedSizeArena(accessor.underlying());
+    } else {
+      extension->string_value.SetAllocated(accessor.underlying());
+    }
+    extension->is_cleared = false;
+    return accessor;
   } else {
     ABSL_DCHECK_TYPE(*extension, OPTIONAL_FIELD, STRING);
+    extension->is_cleared = false;
+    return MaybeArenaStringAccessor(
+        extension->string_value.IsFixedSizeArena() ? arena_ : nullptr,
+        extension->string_value.Get());
   }
-  extension->is_cleared = false;
-  return extension->string_value;
 }
 
 const std::string& ExtensionSet::GetRepeatedString(int number,
@@ -553,15 +592,23 @@ const std::string& ExtensionSet::GetRepeatedString(int number,
   return extension->repeated_string_value->Get(index);
 }
 
-std::string* ExtensionSet::MutableRepeatedString(int number, int index) {
+MutableStringType ExtensionSet::MutableRepeatedString(int number, int index) {
   Extension* extension = FindOrNull(number);
   ABSL_CHECK(extension != nullptr) << "Index out-of-bounds (field is empty).";
   ABSL_DCHECK_TYPE(*extension, REPEATED_FIELD, STRING);
   return extension->repeated_string_value->Mutable(index);
 }
 
-std::string* ExtensionSet::AddString(int number, FieldType type,
-                                     const FieldDescriptor* descriptor) {
+MaybeArenaStringAccessor ExtensionSet::MutableRepeatedAccessor(int number,
+                                                               int index) {
+  Extension* extension = FindOrNull(number);
+  ABSL_CHECK(extension != nullptr) << "Index out-of-bounds (field is empty).";
+  ABSL_DCHECK_TYPE(*extension, REPEATED_FIELD, STRING);
+  return extension->repeated_string_value->MutableAccessor(index);
+}
+
+MutableStringType ExtensionSet::AddString(int number, FieldType type,
+                                          const FieldDescriptor* descriptor) {
   Extension* extension;
   if (MaybeNewExtension(number, descriptor, &extension)) {
     extension->type = type;
@@ -574,6 +621,22 @@ std::string* ExtensionSet::AddString(int number, FieldType type,
     ABSL_DCHECK_TYPE(*extension, REPEATED_FIELD, STRING);
   }
   return extension->repeated_string_value->Add();
+}
+
+MaybeArenaStringAccessor ExtensionSet::AddAccessor(
+    int number, FieldType type, const FieldDescriptor* descriptor) {
+  Extension* extension;
+  if (MaybeNewExtension(number, descriptor, &extension)) {
+    extension->type = type;
+    ABSL_DCHECK_EQ(cpp_type(extension->type), WireFormatLite::CPPTYPE_STRING);
+    extension->is_repeated = true;
+    extension->is_packed = false;
+    extension->repeated_string_value =
+        Arena::CreateMessage<RepeatedPtrField<std::string>>(arena_);
+  } else {
+    ABSL_DCHECK_TYPE(*extension, REPEATED_FIELD, STRING);
+  }
+  return extension->repeated_string_value->AddAccessor();
 }
 
 // -------------------------------------------------------------------
@@ -1017,7 +1080,8 @@ void ExtensionSet::InternalExtensionMergeFrom(const MessageLite* extendee,
         HANDLE_TYPE(ENUM, enum, Enum);
 #undef HANDLE_TYPE
         case WireFormatLite::CPPTYPE_STRING:
-          SetString(number, other_extension.type, *other_extension.string_value,
+          SetString(number, other_extension.type,
+                    *other_extension.string_value.Get(),
                     other_extension.descriptor);
           break;
         case WireFormatLite::CPPTYPE_MESSAGE: {
@@ -1291,7 +1355,7 @@ void ExtensionSet::Extension::Clear() {
     if (!is_cleared) {
       switch (cpp_type(type)) {
         case WireFormatLite::CPPTYPE_STRING:
-          string_value->clear();
+          MaybeArenaStringAccessor::clear(string_value.Get());
           break;
         case WireFormatLite::CPPTYPE_MESSAGE:
           if (is_lazy) {
@@ -1420,8 +1484,8 @@ size_t ExtensionSet::Extension::ByteSize(int number) const {
       HANDLE_TYPE(UINT64, UInt64, uint64_t_value);
       HANDLE_TYPE(SINT32, SInt32, int32_t_value);
       HANDLE_TYPE(SINT64, SInt64, int64_t_value);
-      HANDLE_TYPE(STRING, String, *string_value);
-      HANDLE_TYPE(BYTES, Bytes, *string_value);
+      HANDLE_TYPE(STRING, String, *string_value.Get());
+      HANDLE_TYPE(BYTES, Bytes, *string_value.Get());
       HANDLE_TYPE(ENUM, Enum, enum_value);
       HANDLE_TYPE(GROUP, Group, *message_value);
 #undef HANDLE_TYPE
@@ -1500,7 +1564,7 @@ void ExtensionSet::Extension::Free() {
   } else {
     switch (cpp_type(type)) {
       case WireFormatLite::CPPTYPE_STRING:
-        delete string_value;
+        delete string_value.Get();
         break;
       case WireFormatLite::CPPTYPE_MESSAGE:
         if (is_lazy) {
@@ -1799,8 +1863,8 @@ uint8_t* ExtensionSet::Extension::InternalSerializeFieldWithCachedSizesToArray(
     target = stream->EnsureSpace(target);                \
     target = stream->WriteString(number, VALUE, target); \
     break
-      HANDLE_TYPE(STRING, String, *string_value);
-      HANDLE_TYPE(BYTES, Bytes, *string_value);
+      HANDLE_TYPE(STRING, String, *string_value.Get());
+      HANDLE_TYPE(BYTES, Bytes, *string_value.Get());
 #undef HANDLE_TYPE
       case WireFormatLite::TYPE_GROUP:
         target = stream->EnsureSpace(target);

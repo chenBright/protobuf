@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package proto3_arenastring_unittest;
+
+option cc_mutable_donated_string = false;
+
+message Proto3 {
+  string s = 1;
+  bytes b = 2;
+  bytes c = 3 [ctype = CORD];
+  optional string os = 4;
+  optional bytes ob = 5;
+  optional bytes oc = 6 [ctype = CORD];
+  repeated string rs = 7;
+  repeated bytes rb = 8;
+  repeated bytes rc = 9 [ctype = CORD];
+  oneof o {
+    string ons = 10;
+    bytes onb = 11;
+    bytes onc = 12 [ctype = CORD];
+  }
+  map<string, string> ms = 13;
+};

@@ -35,10 +35,10 @@
 #include "absl/log/absl_check.h"
 #include "absl/meta/type_traits.h"
 #include "google/protobuf/arena.h"
+#include "google/protobuf/arenastring.h"
 #include "google/protobuf/internal_visibility.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/port.h"
-
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -764,11 +764,39 @@ inline void RepeatedPtrFieldBase::MergeFrom<Message>(
   return MergeFrom<MessageLite>(from);
 }
 
+// Use 1 << 1 bit in string* mark a string as arenastring
+// store this tagged ptr as StringHandlerType to disable align optimize
+struct StringHandlerType {
+  inline std::string* ToStringPtr() noexcept {
+    return reinterpret_cast<std::string*>(reinterpret_cast<uintptr_t>(this) &
+                                          ~2);
+  }
+  inline const std::string* ToStringPtr() const noexcept {
+    return reinterpret_cast<const std::string*>(
+        reinterpret_cast<uintptr_t>(this) & ~2);
+  }
+  inline std::string* UnTaggedToStringPtr() noexcept {
+    return reinterpret_cast<std::string*>(this);
+  }
+  inline const std::string* UnTaggedToStringPtr() const noexcept {
+    return reinterpret_cast<const std::string*>(this);
+  }
+  inline bool IsTagged() const noexcept {
+    return reinterpret_cast<uintptr_t>(this) & 2;
+  }
+  inline static StringHandlerType* ToTagged(std::string* string) noexcept {
+    return reinterpret_cast<StringHandlerType*>(
+        reinterpret_cast<uintptr_t>(string) | 2);
+  }
+  inline static StringHandlerType* ToUnTagged(std::string* string) noexcept {
+    return reinterpret_cast<StringHandlerType*>(string);
+  }
+};
+
 // Appends all `std::string` values from `from` to this instance.
 template <>
-void RepeatedPtrFieldBase::MergeFrom<std::string>(
+void RepeatedPtrFieldBase::MergeFrom<StringHandlerType>(
     const RepeatedPtrFieldBase& from);
-
 
 PROTOBUF_EXPORT void InternalOutOfLineDeleteMessageLite(MessageLite* message);
 
@@ -854,35 +882,46 @@ PROTOBUF_EXPORT void* NewStringElement(Arena* arena);
 template <>
 class GenericTypeHandler<std::string> {
  public:
-  typedef std::string Type;
-  using Movable = IsMovable<Type>;
+  // Use StringHandlerType* instead of string* to support tagged ptr
+  using Type = StringHandlerType;
+  using Movable = IsMovable<std::string>;
 
   static constexpr auto GetNewFunc() { return NewStringElement; }
 
-  static PROTOBUF_NOINLINE std::string* New(Arena* arena) {
-    return Arena::Create<std::string>(arena);
-  }
-  static PROTOBUF_NOINLINE std::string* New(Arena* arena, std::string&& value) {
-    return Arena::Create<std::string>(arena, std::move(value));
-  }
-  static inline std::string* NewFromPrototype(const std::string*,
-                                              Arena* arena) {
-    return New(arena);
-  }
-  static inline Arena* GetArena(std::string*) { return nullptr; }
-  static inline void Delete(std::string* value, Arena* arena) {
-    if (arena == nullptr) {
-      delete value;
+  static PROTOBUF_NOINLINE Type* New(Arena* arena) {
+    if (arena != nullptr) {
+      return Type::ToTagged(ArenaStringAccessor::create(arena).underlying());
+    } else {
+      return Type::ToUnTagged(new std::string());
     }
   }
-  static inline void Clear(std::string* value) { value->clear(); }
-  static inline void Merge(const std::string& from, std::string* to) {
-    *to = from;
+  static inline Type* NewFromPrototype(const Type*, Arena* arena) {
+    return New(arena);
   }
-  static size_t SpaceUsedLong(const std::string& value) {
-    return sizeof(value) + StringSpaceUsedExcludingSelfLong(value);
+  static inline Arena* GetArena(Type*) { return nullptr; }
+  static inline void Delete(Type* value, Arena* arena) {
+    if (arena == nullptr) {
+      delete value->UnTaggedToStringPtr();
+    }
+  }
+  static inline void Clear(Type* value) {
+    MaybeArenaStringAccessor::clear(value->ToStringPtr());
+  }
+  static inline void Merge(const Type& from, Type* to) {
+    *to->UnTaggedToStringPtr() = *from.UnTaggedToStringPtr();
+  }
+  static size_t SpaceUsedLong(const Type& value) {
+    return sizeof(std::string) +
+           StringSpaceUsedExcludingSelfLong(*value.ToStringPtr());
   }
 };
+
+// Most function of RepeatedPtrFieldBase is type erased except
+// AddAllocatedSlowWithCopy
+template <>
+void RepeatedPtrFieldBase::AddAllocatedSlowWithCopy<
+    GenericTypeHandler<std::string>>(StringHandlerType* value,
+                                     Arena* value_arena, Arena* my_arena);
 
 }  // namespace internal
 
@@ -905,6 +944,10 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
             internal::is_supported_message_type<Element>>::value,
         "We only support string and Message types in RepeatedPtrField.");
   }
+
+  // Note:  RepeatedPtrField SHOULD NOT be subclassed by users.
+  using TypeHandler = internal::GenericTypeHandler<Element>;
+  using StorageType = typename TypeHandler::Type;
 
  public:
   using value_type = Element;
@@ -959,13 +1002,46 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
   int size() const;
 
   const_reference Get(int index) const ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  template <typename T = Element,
+            typename std::enable_if<!std::is_same<T, std::string>::value,
+                                    int>::type = 0>
   pointer Mutable(int index) ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  // Replace return type of mutable function from string* to MutableStringType
+  template <typename T = Element,
+            typename std::enable_if<std::is_same<T, std::string>::value,
+                                    int>::type = 0>
+  MutableStringType Mutable(int index) ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  template <typename T = Element,
+            typename = typename std::enable_if<
+                std::is_same<T, std::string>::value>::type>
+  pointer MutableString(int index) ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  template <typename T = Element,
+            typename = typename std::enable_if<
+                std::is_same<T, std::string>::value>::type>
+  MaybeArenaStringAccessor MutableAccessor(int index)
+      ABSL_ATTRIBUTE_LIFETIME_BOUND;
 
   // Unlike std::vector, adding an element to a RepeatedPtrField doesn't always
   // make a new element; it might re-use an element left over from when the
   // field was Clear()'d or resize()'d smaller.  For this reason, Add() is the
   // fastest API for adding a new element.
+  template <typename T = Element,
+            typename std::enable_if<!std::is_same<T, std::string>::value,
+                                    int>::type = 0>
   pointer Add() ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  // Replace return type of mutable function from string* to MutableStringType
+  template <typename T = Element,
+            typename std::enable_if<std::is_same<T, std::string>::value,
+                                    int>::type = 0>
+  MutableStringType Add();
+  template <typename T = Element,
+            typename = typename std::enable_if<
+                std::is_same<T, std::string>::value>::type>
+  Element* AddString();
+  template <typename T = Element,
+            typename = typename std::enable_if<
+                std::is_same<T, std::string>::value>::type>
+  MaybeArenaStringAccessor AddAccessor();
 
   // `Add(std::move(value));` is equivalent to `*Add() = std::move(value);`
   // It will either move-construct to the end of this field, or swap value
@@ -984,18 +1060,35 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
 
   // Append elements in the range [begin, end) after reserving
   // the appropriate number of elements.
-  template <typename Iter>
+  template <typename Iter, typename T = Element,
+            typename std::enable_if<!std::is_same<T, std::string>::value,
+                                    int>::type = 0>
+  void Add(Iter begin, Iter end);
+  // Specialization for string
+  template <typename Iter, typename T = Element,
+            typename std::enable_if<std::is_same<T, std::string>::value,
+                                    int>::type = 0>
   void Add(Iter begin, Iter end);
 
   const_reference operator[](int index) const ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return Get(index);
   }
-  reference operator[](int index) ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  typename std::conditional<::std::is_same<Element, std::string>::value,
+                            MutableStringReferenceType, reference>::type
+  operator[](int index) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     return *Mutable(index);
   }
 
   const_reference at(int index) const ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  template <typename T = Element,
+            typename std::enable_if<!std::is_same<T, std::string>::value,
+                                    int>::type = 0>
   reference at(int index) ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  // Replace return type of mutable function from string* to MutableStringType
+  template <typename T = Element,
+            typename std::enable_if<std::is_same<T, std::string>::value,
+                                    int>::type = 0>
+  MutableStringReferenceType at(int index) ABSL_ATTRIBUTE_LIFETIME_BOUND;
 
   // Removes the last element in the array.
   // Ownership of the element is retained by the array.
@@ -1023,9 +1116,10 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
 
   // Gets the underlying array.  This pointer is possibly invalidated by
   // any add or remove operation.
-  Element**
-  mutable_data() ABSL_ATTRIBUTE_LIFETIME_BOUND;
-  const Element* const* data() const ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  //
+  // Underlying pointer for string maybe tagged
+  StorageType** mutable_data() ABSL_ATTRIBUTE_LIFETIME_BOUND;
+  const StorageType* const* data() const ABSL_ATTRIBUTE_LIFETIME_BOUND;
 
   // Swaps entire contents with "other". If they are on separate arenas, then
   // copies data.
@@ -1112,13 +1206,17 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
   // transfers to the arena at the "AddAllocated" call and is not released
   // anymore, causing a double delete. UnsafeArenaAddAllocated prevents this.
   // Requires:  value != nullptr
-  void UnsafeArenaAddAllocated(Element* value);
+  //
+  // Underlying pointer for string maybe tagged
+  void UnsafeArenaAddAllocated(StorageType* value);
 
   // Removes and returns the last element.  Unlike ReleaseLast, the returned
   // pointer is always to the original object.  This may be in an arena, in
   // which case it would have the arena's lifetime.
   // Requires: current_size_ > 0
-  pointer UnsafeArenaReleaseLast();
+  //
+  // Underlying pointer for string maybe tagged
+  StorageType* UnsafeArenaReleaseLast();
 
   // Extracts elements with indices in the range "[start .. start+num-1]".
   // The caller assumes ownership of the extracted elements and is responsible
@@ -1141,7 +1239,9 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
   // copies are ever performed. Instead, the raw object pointers are returned.
   // Thus, if on an arena, the returned objects must not be freed, because they
   // will not be heap-allocated objects.
-  void UnsafeArenaExtractSubrange(int start, int num, Element** elements);
+  //
+  // Underlying pointer for string maybe tagged
+  void UnsafeArenaExtractSubrange(int start, int num, StorageType** elements);
 
   // When elements are removed by calls to RemoveLast() or Clear(), they
   // are not actually freed.  Instead, they are cleared and kept so that
@@ -1182,7 +1282,6 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
     internal::RepeatedPtrFieldBase::InternalSwap(other);
   }
 
-
  private:
   using InternalArenaConstructable_ = void;
   using DestructorSkippable_ = void;
@@ -1194,14 +1293,10 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
   template <typename T>
   friend struct WeakRepeatedPtrField;
 
-  // Note:  RepeatedPtrField SHOULD NOT be subclassed by users.
-  using TypeHandler = internal::GenericTypeHandler<Element>;
-
   RepeatedPtrField(Arena* arena, const RepeatedPtrField& rhs);
   RepeatedPtrField(Arena* arena, RepeatedPtrField&& rhs);
 
-
-  void AddAllocatedForParse(Element* p) {
+  void AddAllocatedForParse(StorageType* p) {
     return RepeatedPtrFieldBase::AddAllocatedForParse(p);
   }
 };
@@ -1311,28 +1406,123 @@ inline const Element& RepeatedPtrField<Element>::Get(int index) const
   return RepeatedPtrFieldBase::Get<TypeHandler>(index);
 }
 
-template <typename Element>
-inline const Element& RepeatedPtrField<Element>::at(int index) const
+template <>
+inline const std::string& RepeatedPtrField<std::string>::Get(int index) const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  return RepeatedPtrFieldBase::at<TypeHandler>(index);
+  return *RepeatedPtrFieldBase::Get<TypeHandler>(index).ToStringPtr();
 }
 
 template <typename Element>
+inline const Element& RepeatedPtrField<Element>::at(int index) const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  return Get(index);
+}
+
+template <typename Element>
+template <typename T, typename std::enable_if<
+                          !std::is_same<T, std::string>::value, int>::type>
 inline Element& RepeatedPtrField<Element>::at(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   return RepeatedPtrFieldBase::at<TypeHandler>(index);
 }
 
+template <typename Element>
+template <typename T, typename std::enable_if<
+                          std::is_same<T, std::string>::value, int>::type>
+inline MutableStringReferenceType RepeatedPtrField<Element>::at(int index) {
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  return MutableAccessor(index);
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  return *MutableString(index);
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+}
 
 template <typename Element>
+template <typename T, typename std::enable_if<
+                          !std::is_same<T, std::string>::value, int>::type>
 inline Element* RepeatedPtrField<Element>::Mutable(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   return RepeatedPtrFieldBase::Mutable<TypeHandler>(index);
 }
 
 template <typename Element>
-inline Element* RepeatedPtrField<Element>::Add() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+template <typename T, typename std::enable_if<
+                          std::is_same<T, std::string>::value, int>::type>
+inline MutableStringType RepeatedPtrField<Element>::Mutable(int index)
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  return MutableAccessor(index);
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  return MutableString(index);
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+}
+
+template <typename Element>
+template <typename T, typename>
+inline Element* RepeatedPtrField<Element>::MutableString(int index)
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  auto value = RepeatedPtrFieldBase::Mutable<TypeHandler>(index);
+  if (value->IsTagged()) {
+    auto string = Arena::Create<std::string>(GetArena(), *value->ToStringPtr());
+    raw_mutable_data()[index] = string;
+    return string;
+  }
+  return value->UnTaggedToStringPtr();
+}
+
+template <typename Element>
+template <typename T, typename>
+inline MaybeArenaStringAccessor RepeatedPtrField<Element>::MutableAccessor(
+    int index) ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  auto value = RepeatedPtrFieldBase::Mutable<TypeHandler>(index);
+  if (value->IsTagged()) {
+    return MaybeArenaStringAccessor(GetArena(), value->ToStringPtr());
+  }
+  return MaybeArenaStringAccessor(nullptr, value->UnTaggedToStringPtr());
+}
+
+template <typename Element>
+template <typename T, typename std::enable_if<
+                          !std::is_same<T, std::string>::value, int>::type>
+PROTOBUF_NOINLINE Element* RepeatedPtrField<Element>::Add()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
   return RepeatedPtrFieldBase::Add<TypeHandler>();
+}
+
+template <typename Element>
+template <typename T, typename std::enable_if<
+                          std::is_same<T, std::string>::value, int>::type>
+inline MutableStringType RepeatedPtrField<Element>::Add()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  return AddAccessor();
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  return AddString();
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+}
+
+template <typename Element>
+template <typename T, typename>
+inline Element* RepeatedPtrField<Element>::AddString()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  auto value = RepeatedPtrFieldBase::Add<TypeHandler>();
+  if (value->IsTagged()) {
+    auto string = Arena::Create<std::string>(GetArena(), *value->ToStringPtr());
+    raw_mutable_data()[size() - 1] = string;
+    return string;
+  }
+  return value->UnTaggedToStringPtr();
+}
+
+template <typename Element>
+template <typename T, typename>
+inline MaybeArenaStringAccessor RepeatedPtrField<Element>::AddAccessor()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  auto value = RepeatedPtrFieldBase::Add<TypeHandler>();
+  if (value->IsTagged()) {
+    return MaybeArenaStringAccessor(GetArena(), value->ToStringPtr());
+  }
+  return MaybeArenaStringAccessor(nullptr, value->UnTaggedToStringPtr());
 }
 
 template <typename Element>
@@ -1340,8 +1530,15 @@ inline void RepeatedPtrField<Element>::Add(Element&& value) {
   RepeatedPtrFieldBase::Add<TypeHandler>(std::move(value));
 }
 
+template <>
+inline void RepeatedPtrField<std::string>::Add(std::string&& value) {
+  AddAccessor() = std::move(value);
+}
+
 template <typename Element>
-template <typename Iter>
+template <
+    typename Iter, typename T,
+    typename std::enable_if<!std::is_same<T, std::string>::value, int>::type>
 inline void RepeatedPtrField<Element>::Add(Iter begin, Iter end) {
   if (std::is_base_of<
           std::forward_iterator_tag,
@@ -1351,6 +1548,22 @@ inline void RepeatedPtrField<Element>::Add(Iter begin, Iter end) {
   }
   for (; begin != end; ++begin) {
     *Add() = *begin;
+  }
+}
+
+template <typename Element>
+template <
+    typename Iter, typename T,
+    typename std::enable_if<std::is_same<T, std::string>::value, int>::type>
+inline void RepeatedPtrField<Element>::Add(Iter begin, Iter end) {
+  if (std::is_base_of<
+          std::forward_iterator_tag,
+          typename std::iterator_traits<Iter>::iterator_category>::value) {
+    int reserve = static_cast<int>(std::distance(begin, end));
+    Reserve(size() + reserve);
+  }
+  for (; begin != end; ++begin) {
+    AddAccessor() = *begin;
   }
 }
 
@@ -1368,7 +1581,7 @@ inline void RepeatedPtrField<Element>::DeleteSubrange(int start, int num) {
   Arena* arena = GetArena();
   for (int i = 0; i < num; ++i) {
     using H = CommonHandler<TypeHandler>;
-    H::Delete(static_cast<Element*>(subrange[i]), arena);
+    H::Delete(static_cast<StorageType*>(subrange[i]), arena);
   }
   UnsafeArenaExtractSubrange(start, num, nullptr);
 }
@@ -1403,7 +1616,8 @@ inline void RepeatedPtrField<Element>::ExtractSubrange(int start, int num,
     // returned elements are heap-allocated. Otherwise, just forward it.
     if (arena != nullptr) {
       for (int i = 0; i < num; ++i) {
-        elements[i] = copy<TypeHandler>(extracted[i]);
+        elements[i] =
+            reinterpret_cast<Element*>(copy<TypeHandler>(extracted[i]));
       }
     } else {
       memcpy(elements, extracted, num * sizeof(Element*));
@@ -1415,7 +1629,7 @@ inline void RepeatedPtrField<Element>::ExtractSubrange(int start, int num,
 
 template <typename Element>
 inline void RepeatedPtrField<Element>::UnsafeArenaExtractSubrange(
-    int start, int num, Element** elements) {
+    int start, int num, StorageType** elements) {
   ABSL_DCHECK_GE(start, 0);
   ABSL_DCHECK_GE(num, 0);
   ABSL_DCHECK_LE(start + num, size());
@@ -1438,7 +1652,7 @@ template <typename Element>
 inline void RepeatedPtrField<Element>::MergeFrom(
     const RepeatedPtrField& other) {
   if (other.empty()) return;
-  RepeatedPtrFieldBase::MergeFrom<Element>(other);
+  RepeatedPtrFieldBase::MergeFrom<StorageType>(other);
 }
 
 template <typename Element>
@@ -1471,14 +1685,14 @@ RepeatedPtrField<Element>::erase(const_iterator first, const_iterator last)
 }
 
 template <typename Element>
-inline Element** RepeatedPtrField<Element>::mutable_data()
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+inline typename RepeatedPtrField<Element>::StorageType**
+RepeatedPtrField<Element>::mutable_data() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   return RepeatedPtrFieldBase::mutable_data<TypeHandler>();
 }
 
 template <typename Element>
-inline const Element* const* RepeatedPtrField<Element>::data() const
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+inline const typename RepeatedPtrField<Element>::StorageType* const*
+RepeatedPtrField<Element>::data() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
   return RepeatedPtrFieldBase::data<TypeHandler>();
 }
 
@@ -1522,8 +1736,15 @@ inline void RepeatedPtrField<Element>::AddAllocated(Element* value) {
   RepeatedPtrFieldBase::AddAllocated<TypeHandler>(value);
 }
 
+template <>
+inline void RepeatedPtrField<std::string>::AddAllocated(std::string* value) {
+  RepeatedPtrFieldBase::AddAllocated<TypeHandler>(
+      internal::StringHandlerType::ToUnTagged(value));
+}
+
 template <typename Element>
-inline void RepeatedPtrField<Element>::UnsafeArenaAddAllocated(Element* value) {
+inline void RepeatedPtrField<Element>::UnsafeArenaAddAllocated(
+    StorageType* value) {
   RepeatedPtrFieldBase::UnsafeArenaAddAllocated<TypeHandler>(value);
 }
 
@@ -1532,8 +1753,20 @@ inline Element* RepeatedPtrField<Element>::ReleaseLast() {
   return RepeatedPtrFieldBase::ReleaseLast<TypeHandler>();
 }
 
+template <>
+inline std::string* RepeatedPtrField<std::string>::ReleaseLast() {
+  auto value = RepeatedPtrFieldBase::UnsafeArenaReleaseLast<TypeHandler>();
+  if (value->IsTagged()) {
+    return new std::string(*value->ToStringPtr());
+  } else if (GetArena() != nullptr) {
+    return new std::string(::std::move(*value->UnTaggedToStringPtr()));
+  }
+  return value->UnTaggedToStringPtr();
+}
+
 template <typename Element>
-inline Element* RepeatedPtrField<Element>::UnsafeArenaReleaseLast() {
+inline typename RepeatedPtrField<Element>::StorageType*
+RepeatedPtrField<Element>::UnsafeArenaReleaseLast() {
   return RepeatedPtrFieldBase::UnsafeArenaReleaseLast<TypeHandler>();
 }
 
@@ -1574,11 +1807,16 @@ class RepeatedPtrIterator {
   using iterator_category = std::random_access_iterator_tag;
   using value_type = typename std::remove_const<Element>::type;
   using difference_type = std::ptrdiff_t;
-  using pointer = Element*;
-  using reference = Element&;
+  using pointer =
+      typename std::conditional<std::is_same<std::string, Element>::value,
+                                MutableStringType, Element*>::type;
+  using reference =
+      typename std::conditional<std::is_same<std::string, Element>::value,
+                                MutableStringReferenceType, Element&>::type;
+  using TypeHandler = GenericTypeHandler<std::string>;
 
-  RepeatedPtrIterator() : it_(nullptr) {}
-  explicit RepeatedPtrIterator(void* const* it) : it_(it) {}
+  RepeatedPtrIterator() : it_(nullptr), arena_(nullptr) {}
+  RepeatedPtrIterator(void* const* it, Arena* arena) : it_(it), arena_(arena) {}
 
   // Allows "upcasting" from RepeatedPtrIterator<T**> to
   // RepeatedPtrIterator<const T*const*>.
@@ -1586,7 +1824,7 @@ class RepeatedPtrIterator {
             typename std::enable_if<std::is_convertible<
                 OtherElement*, pointer>::value>::type* = nullptr>
   RepeatedPtrIterator(const RepeatedPtrIterator<OtherElement>& other)
-      : it_(other.it_) {}
+      : it_(other.it_), arena_(other.arena_) {}
 
   // dereferenceable
   reference operator*() const { return *reinterpret_cast<Element*>(*it_); }
@@ -1597,12 +1835,12 @@ class RepeatedPtrIterator {
     ++it_;
     return *this;
   }
-  iterator operator++(int) { return iterator(it_++); }
+  iterator operator++(int) { return iterator(it_++, arena_); }
   iterator& operator--() {
     --it_;
     return *this;
   }
-  iterator operator--(int) { return iterator(it_--); }
+  iterator operator--(int) { return iterator(it_--, arena_); }
 
   // equality_comparable
   friend bool operator==(const iterator& x, const iterator& y) {
@@ -1662,6 +1900,7 @@ class RepeatedPtrIterator {
 
   // The internal iterator.
   void* const* it_;
+  Arena* arena_;
 };
 
 template <typename Traits, typename = void>
@@ -1674,6 +1913,41 @@ struct IteratorConceptSupport<Traits,
                               absl::void_t<typename Traits::iterator_concept>> {
   using tag = typename Traits::iterator_concept;
 };
+
+template <>
+inline const std::string& RepeatedPtrIterator<const std::string>::operator*()
+    const {
+  auto value = reinterpret_cast<const TypeHandler::Type*>(*it_);
+  return *value->ToStringPtr();
+}
+
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+template <>
+inline MaybeArenaStringAccessor RepeatedPtrIterator<std::string>::operator*()
+    const {
+  auto value = reinterpret_cast<TypeHandler::Type*>(*it_);
+  if (value->IsTagged()) {
+    return MaybeArenaStringAccessor(arena_, value->ToStringPtr());
+  }
+  return MaybeArenaStringAccessor(nullptr, value->UnTaggedToStringPtr());
+}
+template <>
+inline MaybeArenaStringAccessor RepeatedPtrIterator<std::string>::operator->()
+    const {
+  return operator*();
+}
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+template <>
+inline std::string& RepeatedPtrIterator<std::string>::operator*() const {
+  auto value = reinterpret_cast<TypeHandler::Type*>(*it_);
+  if (value->IsTagged()) {
+    auto string = Arena::Create<std::string>(arena_, *value->ToStringPtr());
+    *const_cast<void**>(it_) = string;
+    return *string;
+  }
+  return *value->UnTaggedToStringPtr();
+}
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
 
 // Provides an iterator that operates on pointers to the underlying objects
 // rather than the objects themselves as RepeatedPtrIterator does.
@@ -1793,12 +2067,12 @@ class RepeatedPtrOverPtrsIterator {
 template <typename Element>
 inline typename RepeatedPtrField<Element>::iterator
 RepeatedPtrField<Element>::begin() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  return iterator(raw_data());
+  return iterator(raw_data(), GetArena());
 }
 template <typename Element>
 inline typename RepeatedPtrField<Element>::const_iterator
 RepeatedPtrField<Element>::begin() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  return iterator(raw_data());
+  return iterator(raw_data(), nullptr);
 }
 template <typename Element>
 inline typename RepeatedPtrField<Element>::const_iterator
@@ -1808,12 +2082,12 @@ RepeatedPtrField<Element>::cbegin() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
 template <typename Element>
 inline typename RepeatedPtrField<Element>::iterator
 RepeatedPtrField<Element>::end() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  return iterator(raw_data() + size());
+  return iterator(raw_data() + size(), GetArena());
 }
 template <typename Element>
 inline typename RepeatedPtrField<Element>::const_iterator
 RepeatedPtrField<Element>::end() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  return iterator(raw_data() + size());
+  return iterator(raw_data() + size(), nullptr);
 }
 template <typename Element>
 inline typename RepeatedPtrField<Element>::const_iterator
@@ -1888,6 +2162,27 @@ class RepeatedPtrFieldBackInsertIterator {
  private:
   RepeatedPtrField<T>* field_;
 };
+template <>
+inline RepeatedPtrFieldBackInsertIterator<std::string>&
+RepeatedPtrFieldBackInsertIterator<std::string>::operator=(
+    const std::string& value) {
+  *field_->AddAccessor() = value;
+  return *this;
+}
+template <>
+inline RepeatedPtrFieldBackInsertIterator<std::string>&
+RepeatedPtrFieldBackInsertIterator<std::string>::operator=(
+    const std::string* const ptr_to_value) {
+  *field_->AddAccessor() = *ptr_to_value;
+  return *this;
+}
+template <>
+inline RepeatedPtrFieldBackInsertIterator<std::string>&
+RepeatedPtrFieldBackInsertIterator<std::string>::operator=(
+    std::string&& value) {
+  *field_->AddAccessor() = ::std::move(value);
+  return *this;
+}
 
 // A back inserter for RepeatedPtrFields that inserts by transferring ownership
 // of a pointer.
@@ -1923,8 +2218,9 @@ class AllocatedRepeatedPtrFieldBackInsertIterator {
 template <typename T>
 class UnsafeArenaAllocatedRepeatedPtrFieldBackInsertIterator {
  public:
+  using TypeHandler = GenericTypeHandler<T>;
   using iterator_category = std::output_iterator_tag;
-  using value_type = T;
+  using value_type = typename TypeHandler::Type;
   using pointer = void;
   using reference = void;
   using difference_type = std::ptrdiff_t;
@@ -1933,8 +2229,8 @@ class UnsafeArenaAllocatedRepeatedPtrFieldBackInsertIterator {
       RepeatedPtrField<T>* const mutable_field)
       : field_(mutable_field) {}
   UnsafeArenaAllocatedRepeatedPtrFieldBackInsertIterator<T>& operator=(
-      T const* const ptr_to_value) {
-    field_->UnsafeArenaAddAllocated(const_cast<T*>(ptr_to_value));
+      value_type const* const ptr_to_value) {
+    field_->UnsafeArenaAddAllocated(const_cast<value_type*>(ptr_to_value));
     return *this;
   }
   UnsafeArenaAllocatedRepeatedPtrFieldBackInsertIterator<T>& operator*() {
@@ -2000,7 +2296,6 @@ UnsafeArenaAllocatedRepeatedPtrFieldBackInserter(
   return internal::UnsafeArenaAllocatedRepeatedPtrFieldBackInsertIterator<T>(
       mutable_field);
 }
-
 
 namespace internal {
 // Size optimization for `memswap<N>` - supplied below N is used by every

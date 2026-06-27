@@ -254,6 +254,7 @@ class PROTOBUF_EXPORT Any final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_type_url(
       const std::string& value);
   std::string* _internal_mutable_type_url();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_type_url_accessor();
 
   public:
   // bytes value = 2;
@@ -270,6 +271,7 @@ class PROTOBUF_EXPORT Any final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_value(
       const std::string& value);
   std::string* _internal_mutable_value();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_value_accessor();
 
   public:
   // @@protoc_insertion_point(class_scope:google.protobuf.Any)
@@ -340,7 +342,7 @@ inline PROTOBUF_ALWAYS_INLINE void Any::set_type_url(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.Any.type_url)
 }
 inline std::string* Any::mutable_type_url() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_type_url();
+  auto _s = _internal_mutable_type_url();
   // @@protoc_insertion_point(field_mutable:google.protobuf.Any.type_url)
   return _s;
 }
@@ -355,6 +357,10 @@ inline void Any::_internal_set_type_url(const std::string& value) {
 inline std::string* Any::_internal_mutable_type_url() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   return _impl_.type_url_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor Any::_internal_mutable_type_url_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.type_url_.MutableAccessor( GetArena());
 }
 inline std::string* Any::release_type_url() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -390,7 +396,7 @@ inline PROTOBUF_ALWAYS_INLINE void Any::set_value(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.Any.value)
 }
 inline std::string* Any::mutable_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_value();
+  auto _s = _internal_mutable_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.Any.value)
   return _s;
 }
@@ -405,6 +411,10 @@ inline void Any::_internal_set_value(const std::string& value) {
 inline std::string* Any::_internal_mutable_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   return _impl_.value_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor Any::_internal_mutable_value_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.value_.MutableAccessor( GetArena());
 }
 inline std::string* Any::release_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);

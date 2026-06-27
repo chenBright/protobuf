@@ -17,6 +17,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/arena.h"
+#include "google/protobuf/arenastring_impl.h"
 #include "google/protobuf/explicitly_constructed.h"
 #include "google/protobuf/port.h"
 
@@ -321,6 +322,11 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
   // default value is lazily initialized.
   std::string* Mutable(Arena* arena);
   std::string* Mutable(const LazyString& default_value, Arena* arena);
+  // Returns a mutable arenastring when arena != nullptr
+  // keep FixedSizeArena state
+  MaybeArenaStringAccessor MutableAccessor(Arena* arena);
+  MaybeArenaStringAccessor MutableAccessor(const LazyString& default_value,
+                                           Arena* arena);
 
   // Gets a mutable pointer with unspecified contents.
   // This function is identical to Mutable(), except it is optimized for the
@@ -398,20 +404,29 @@ struct PROTOBUF_EXPORT ArenaStringPtr {
       auto* s = new std::string(std::forward<Args>(args)...);
       return tagged_ptr_.SetAllocated(s);
     } else {
-      auto* s = Arena::Create<std::string>(arena, std::forward<Args>(args)...);
-      return tagged_ptr_.SetMutableArena(s);
+      // Initialize to FixedSizeArena state
+      auto* s = ArenaStringAccessor::create(arena, std::forward<Args>(args)...)
+                    .underlying();
+      return tagged_ptr_.SetFixedSizeArena(s);
     }
   }
 
   TaggedStringPtr tagged_ptr_;
 
-  bool IsFixedSizeArena() const { return false; }
+  bool IsFixedSizeArena() const { return tagged_ptr_.IsFixedSizeArena(); }
 
   // Swaps tagged pointer without debug hardening. This is to allow python
   // protobuf to maintain pointer stability even in DEBUG builds.
   inline PROTOBUF_NDEBUG_INLINE static void UnsafeShallowSwap(
       ArenaStringPtr* rhs, ArenaStringPtr* lhs) {
     std::swap(lhs->tagged_ptr_, rhs->tagged_ptr_);
+  }
+
+  // Universal accessor for Allocated/MutableArena/FixedSizeArena state
+  PROTOBUF_ALWAYS_INLINE
+  inline MaybeArenaStringAccessor Accessor(Arena* arena) {
+    return MaybeArenaStringAccessor(
+        tagged_ptr_.IsFixedSizeArena() ? arena : nullptr, tagged_ptr_.Get());
   }
 
   friend class ::google::protobuf::internal::SwapFieldHelper;
@@ -522,8 +537,7 @@ inline PROTOBUF_NDEBUG_INLINE void ArenaStringPtr::InternalSwap(
 }
 
 inline void ArenaStringPtr::ClearNonDefaultToEmpty() {
-  // Unconditionally mask away the tag.
-  tagged_ptr_.Get()->clear();
+  MaybeArenaStringAccessor::clear(tagged_ptr_.Get());
 }
 
 inline std::string* ArenaStringPtr::UnsafeMutablePointer() {

@@ -27,6 +27,7 @@
 #include "absl/strings/cord.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/arena.h"
+#include "google/protobuf/arenastring_impl.h"
 #include "google/protobuf/explicitly_constructed.h"
 #include "google/protobuf/internal_visibility.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -386,6 +387,7 @@ class PROTOBUF_EXPORT MessageLite {
   // Serialize the message and store it in the given string.  All required
   // fields must be set.
   bool SerializeToString(std::string* output) const;
+  bool SerializeToString(MaybeArenaStringAccessor output) const;
   // Like SerializeToString(), but allows missing required fields.
   bool SerializePartialToString(std::string* output) const;
   // Serialize the message and store it in the given byte array.  All required
@@ -418,8 +420,10 @@ class PROTOBUF_EXPORT MessageLite {
   // Like SerializeToString(), but appends to the data to the string's
   // existing contents.  All required fields must be set.
   bool AppendToString(std::string* output) const;
+  bool AppendToString(MaybeArenaStringAccessor output) const;
   // Like AppendToString(), but allows missing required fields.
   bool AppendPartialToString(std::string* output) const;
+  bool AppendPartialToString(MaybeArenaStringAccessor output) const;
 
   // Reads a protocol buffer from a Cord and merges it into this message.
   bool MergeFromCord(const absl::Cord& cord);

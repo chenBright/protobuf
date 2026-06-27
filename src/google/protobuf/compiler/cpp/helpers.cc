@@ -962,7 +962,20 @@ bool CanStringBeInlined(const FieldDescriptor* field) {
 bool IsStringInlined(const FieldDescriptor* field, const Options& options) {
   (void)field;
   (void)options;
-  return false;
+  // ARENASTRING PATCH: enable InlinedStringField when cc_mutable_donated_string=true
+  return field->file()->options().cc_mutable_donated_string() &&
+         // only for string/bytes
+         field->cpp_type() == FieldDescriptor::CPPTYPE_STRING &&
+         // exclude non default ctype
+         internal::cpp::EffectiveStringCType(field) == FieldOptions::STRING &&
+         // exclude oneof
+         !field->real_containing_oneof() &&
+         // exclude repeated
+         !field->is_repeated() &&
+         // exclude map
+         !field->containing_type()->options().map_entry() &&
+         // no default value
+         !field->has_default_value();
 }
 
 static bool HasLazyFields(const Descriptor* descriptor, const Options& options,

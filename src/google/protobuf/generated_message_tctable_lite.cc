@@ -1379,23 +1379,46 @@ PROTOBUF_ALWAYS_INLINE inline const char* ReadStringIntoArena(
     MessageLite* /*msg*/, const char* ptr, ParseContext* ctx,
     uint32_t /*aux_idx*/, const TcParseTableBase* /*table*/,
     ArenaStringPtr& field, Arena* arena) {
-  return ctx->ReadArenaString(ptr, &field, arena);
+  // 统一适配Allocated/MutableArena/FixedSizeArena模式
+  return ctx->ReadArenaString(ptr, field.MutableAccessor(arena));
 }
 
+// ArenaStringPtr/InlinedStringField具有类似的API，模板支持
+template <typename T>
 PROTOBUF_NOINLINE
 const char* ReadStringNoArena(MessageLite* /*msg*/, const char* ptr,
                               ParseContext* ctx, uint32_t /*aux_idx*/,
                               const TcParseTableBase* /*table*/,
-                              ArenaStringPtr& field) {
+                              T& field) {
   int size = ReadSize(&ptr);
   if (!ptr) return nullptr;
   return ctx->ReadString(ptr, size, field.MutableNoCopy(nullptr));
 }
 
-PROTOBUF_ALWAYS_INLINE inline bool IsValidUTF8(ArenaStringPtr& field) {
+// ArenaStringPtr/InlinedStringField具有类似的API，模板支持
+template <typename T>
+PROTOBUF_ALWAYS_INLINE inline bool IsValidUTF8(T& field) {
   return utf8_range::IsStructurallyValid(field.Get());
 }
 
+// InlinedStringField需要按照协议提取donated标记之后进行访问
+PROTOBUF_ALWAYS_INLINE inline const char* ReadStringIntoArena(
+    MessageLite* msg, const char* ptr, ParseContext* ctx,
+    uint32_t aux_idx, const TcParseTableBase* table,
+    InlinedStringField& field, Arena* arena) {
+  // 包含InlinedStringField时aux[0]固定存储了donated bit图
+  // _inlined_string_donated_成员的偏移量
+  auto donated_slot_offset = table->field_aux(0u)->offset;
+  // 根据序号计算bit偏移量
+  auto donated_slot_index = aux_idx / 32;
+  donated_slot_offset += donated_slot_index << 4;
+  auto donated_slot_mask = 1 << (aux_idx % 32);
+  // 取出donated bit，相当于如下方式
+  // msg->_inlined_string_donated_[donated_slot_offset] & donated_slot_mask
+  auto donated = TcParser::RefAt<uint32_t>(msg, donated_slot_offset) & donated_slot_mask;
+  // 实际开始读取数据
+  return ctx->ReadArenaString(ptr, field.MutableAccessor(arena, donated));
+}
 
 }  // namespace
 
@@ -1468,23 +1491,32 @@ PROTOBUF_NOINLINE const char* TcParser::FastUS2(PROTOBUF_TC_PARAM_DECL) {
 
 // Inlined string variants:
 
+// 增加和ArenaStringPtr一样的fast path支持
 const char* TcParser::FastBiS1(PROTOBUF_TC_PARAM_DECL) {
-  PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
+  PROTOBUF_MUSTTAIL return SingularString<uint8_t, InlinedStringField, kNoUtf8>(
+      PROTOBUF_TC_PARAM_PASS);
 }
 const char* TcParser::FastBiS2(PROTOBUF_TC_PARAM_DECL) {
-  PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
+  PROTOBUF_MUSTTAIL return SingularString<uint16_t, InlinedStringField, kNoUtf8>(
+      PROTOBUF_TC_PARAM_PASS);
 }
 const char* TcParser::FastSiS1(PROTOBUF_TC_PARAM_DECL) {
-  PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
+  PROTOBUF_MUSTTAIL return SingularString<uint8_t, InlinedStringField,
+                                          kUtf8ValidateOnly>(
+      PROTOBUF_TC_PARAM_PASS);
 }
 const char* TcParser::FastSiS2(PROTOBUF_TC_PARAM_DECL) {
-  PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
+  PROTOBUF_MUSTTAIL return SingularString<uint16_t, InlinedStringField,
+                                          kUtf8ValidateOnly>(
+      PROTOBUF_TC_PARAM_PASS);
 }
 const char* TcParser::FastUiS1(PROTOBUF_TC_PARAM_DECL) {
-  PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
+  PROTOBUF_MUSTTAIL return SingularString<uint8_t, InlinedStringField, kUtf8>(
+      PROTOBUF_TC_PARAM_PASS);
 }
 const char* TcParser::FastUiS2(PROTOBUF_TC_PARAM_DECL) {
-  PROTOBUF_MUSTTAIL return MiniParse(PROTOBUF_TC_PARAM_NO_DATA_PASS);
+  PROTOBUF_MUSTTAIL return SingularString<uint16_t, InlinedStringField, kUtf8>(
+      PROTOBUF_TC_PARAM_PASS);
 }
 
 // Corded string variants:
@@ -1524,8 +1556,9 @@ PROTOBUF_ALWAYS_INLINE const char* TcParser::RepeatedString(
 #endif
         return true;
       default:
+        // 切换Get接口避免进行MutableArena转换
         if (PROTOBUF_PREDICT_TRUE(
-                utf8_range::IsStructurallyValid(field[field.size() - 1]))) {
+                utf8_range::IsStructurallyValid(field.Get(field.size() - 1)))) {
           return true;
         }
         ReportFastUtf8Error(FastDecodeTag(expected_tag), table);
@@ -1535,13 +1568,13 @@ PROTOBUF_ALWAYS_INLINE const char* TcParser::RepeatedString(
   };
 
   auto* arena = field.GetArena();
-  SerialArena* serial_arena;
+  // 整体代码只有此处依赖SerialArena的内部实现，比较trick先不支持这种优化
+  // 而且ArenaString实现变更后这种加速意义不大
   if (PROTOBUF_PREDICT_TRUE(arena != nullptr &&
-                            arena->impl_.GetSerialArenaFast(&serial_arena) &&
                             field.PrepareForParse())) {
     do {
       ptr += sizeof(TagType);
-      ptr = ParseRepeatedStringOnce(ptr, serial_arena, ctx, field);
+      ptr = ParseRepeatedStringOnce(ptr, arena, ctx, field);
 
       if (PROTOBUF_PREDICT_FALSE(ptr == nullptr || !validate_last_string())) {
         PROTOBUF_MUSTTAIL return Error(PROTOBUF_TC_PARAM_NO_DATA_PASS);
@@ -1551,8 +1584,9 @@ PROTOBUF_ALWAYS_INLINE const char* TcParser::RepeatedString(
   } else {
     do {
       ptr += sizeof(TagType);
-      std::string* str = field.Add();
-      ptr = InlineGreedyStringParser(str, ptr, ctx);
+      // 统一适配Allocated/MutableArena/FixedSizeArena模式
+      auto str = field.AddAccessor();
+      ptr = ctx->ReadArenaString(ptr, str);
       if (PROTOBUF_PREDICT_FALSE(ptr == nullptr || !validate_last_string())) {
         PROTOBUF_MUSTTAIL return Error(PROTOBUF_TC_PARAM_NO_DATA_PASS);
       }
@@ -2163,7 +2197,8 @@ PROTOBUF_NOINLINE const char* TcParser::MpString(PROTOBUF_TC_PARAM_DECL) {
       if (need_init) field.InitDefault();
       Arena* arena = msg->GetArena();
       if (arena) {
-        ptr = ctx->ReadArenaString(ptr, &field, arena);
+        // 统一适配Allocated/MutableArena/FixedSizeArena模式
+        ptr = ctx->ReadArenaString(ptr, field.MutableAccessor(arena));
       } else {
         std::string* str = field.MutableNoCopy(nullptr);
         ptr = InlineGreedyStringParser(str, ptr, ctx);
@@ -2173,6 +2208,24 @@ PROTOBUF_NOINLINE const char* TcParser::MpString(PROTOBUF_TC_PARAM_DECL) {
       break;
     }
 
+    // 增加InlinedStringField的支持分支
+    // 内容除了类型之外和kRepAString分支完全一致
+    case field_layout::kRepIString: {
+      auto& field = RefAt<InlinedStringField>(base, entry.offset);
+      Arena* arena = msg->GetArena();
+      if (arena) {
+        // 每个field通过aux_idx存储了自身使用的donated bit序号
+        auto aux_idx = table->field_aux(entry.aux_idx)->offset;
+        ptr = ReadStringIntoArena(
+            msg, ptr, ctx, aux_idx, table, field, arena);
+      } else {
+        std::string* str = field.MutableNoCopy(nullptr);
+        ptr = InlineGreedyStringParser(str, ptr, ctx);
+      }
+      if (!ptr) break;
+      is_valid = MpVerifyUtf8(field.Get(), table, entry, xform_val);
+      break;
+    }
 
     case field_layout::kRepCord: {
       absl::Cord* field;
@@ -2203,13 +2256,16 @@ PROTOBUF_NOINLINE const char* TcParser::MpString(PROTOBUF_TC_PARAM_DECL) {
 }
 
 PROTOBUF_ALWAYS_INLINE const char* TcParser::ParseRepeatedStringOnce(
-    const char* ptr, SerialArena* serial_arena, ParseContext* ctx,
+    const char* ptr, Arena* arena, ParseContext* ctx,
     RepeatedPtrField<std::string>& field) {
+  using TypeHandler = typename RepeatedPtrField<std::string>::TypeHandler;
   int size = ReadSize(&ptr);
   if (PROTOBUF_PREDICT_FALSE(!ptr)) return {};
-  auto* str = new (serial_arena->AllocateFromStringBlock()) std::string();
-  field.AddAllocatedForParse(str);
-  ptr = ctx->ReadString(ptr, size, str);
+  // 整体代码只有此处依赖SerialArena的内部实现，比较trick先不支持这种优化
+  // 而且ArenaString实现变更后这种加速意义不大
+  auto str = ArenaStringAccessor::create(arena);
+  field.AddAllocatedForParse(StringHandlerType::ToTagged(str.underlying()));
+  ptr = ctx->ReadArenaString(ptr, size, str);
   if (PROTOBUF_PREDICT_FALSE(!ptr)) return {};
   PROTOBUF_ASSUME(ptr != nullptr);
   return ptr;
@@ -2238,16 +2294,17 @@ PROTOBUF_NOINLINE const char* TcParser::MpRepeatedString(
       uint32_t next_tag;
 
       auto* arena = field.GetArena();
-      SerialArena* serial_arena;
+      // 整体代码只有此处依赖SerialArena的内部实现，比较trick先不支持这种优化
+      // 而且ArenaString实现变更后这种加速意义不大
       if (PROTOBUF_PREDICT_TRUE(
               arena != nullptr &&
-              arena->impl_.GetSerialArenaFast(&serial_arena) &&
               field.PrepareForParse())) {
         do {
           ptr = ptr2;
-          ptr = ParseRepeatedStringOnce(ptr, serial_arena, ctx, field);
+          ptr = ParseRepeatedStringOnce(ptr, arena, ctx, field);
+          // 切换Get接口避免进行MutableArena转换
           if (PROTOBUF_PREDICT_FALSE(ptr == nullptr ||
-                                     !MpVerifyUtf8(field[field.size() - 1],
+                                     !MpVerifyUtf8(field.Get(field.size() - 1),
                                                    table, entry, xform_val))) {
             PROTOBUF_MUSTTAIL return Error(PROTOBUF_TC_PARAM_NO_DATA_PASS);
           }
@@ -2257,8 +2314,9 @@ PROTOBUF_NOINLINE const char* TcParser::MpRepeatedString(
       } else {
         do {
           ptr = ptr2;
-          std::string* str = field.Add();
-          ptr = InlineGreedyStringParser(str, ptr, ctx);
+          // 统一适配Allocated/MutableArena/FixedSizeArena模式
+          auto str = field.AddAccessor();
+          ptr = ctx->ReadArenaString(ptr, str);
           if (PROTOBUF_PREDICT_FALSE(
                   ptr == nullptr ||
                   !MpVerifyUtf8(*str, table, entry, xform_val))) {

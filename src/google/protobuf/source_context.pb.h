@@ -205,6 +205,7 @@ class PROTOBUF_EXPORT SourceContext final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_file_name(
       const std::string& value);
   std::string* _internal_mutable_file_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_file_name_accessor();
 
   public:
   // @@protoc_insertion_point(class_scope:google.protobuf.SourceContext)
@@ -273,7 +274,7 @@ inline PROTOBUF_ALWAYS_INLINE void SourceContext::set_file_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.SourceContext.file_name)
 }
 inline std::string* SourceContext::mutable_file_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_file_name();
+  auto _s = _internal_mutable_file_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.SourceContext.file_name)
   return _s;
 }
@@ -288,6 +289,10 @@ inline void SourceContext::_internal_set_file_name(const std::string& value) {
 inline std::string* SourceContext::_internal_mutable_file_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   return _impl_.file_name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor SourceContext::_internal_mutable_file_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.file_name_.MutableAccessor( GetArena());
 }
 inline std::string* SourceContext::release_file_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);

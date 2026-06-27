@@ -136,12 +136,38 @@ class RepeatedPtrFieldWrapper : public RandomAccessRepeatedFieldAccessor {
     MutableRepeatedField(data)->Clear();
   }
   void Set(Field* data, int index, const Value* value) const override {
+    DoSet(data, index, value);
+  }
+  template <typename U = T,
+            typename std::enable_if<!std::is_same<U, std::string>::value,
+                                    int>::type = 0>
+  void DoSet(Field* data, int index, const Value* value) const {
     ConvertToT(value, MutableRepeatedField(data)->Mutable(index));
   }
+  template <typename U = T,
+            typename std::enable_if<std::is_same<U, std::string>::value,
+                                    int>::type = 0>
+  void DoSet(Field* data, int index, const Value* value) const {
+    MutableRepeatedField(data)->MutableAccessor(index) =
+        *static_cast<const std::string*>(value);
+  }
   void Add(Field* data, const Value* value) const override {
+    DoAdd(data, value);
+  }
+  template <typename U = T,
+            typename std::enable_if<!std::is_same<U, std::string>::value,
+                                    int>::type = 0>
+  void DoAdd(Field* data, const Value* value) const {
     T* allocated = New(value);
     ConvertToT(value, allocated);
     MutableRepeatedField(data)->AddAllocated(allocated);
+  }
+  template <typename U = T,
+            typename std::enable_if<std::is_same<U, std::string>::value,
+                                    int>::type = 0>
+  void DoAdd(Field* data, const Value* value) const {
+    MutableRepeatedField(data)->AddAccessor() =
+        *static_cast<const std::string*>(value);
   }
   void RemoveLast(Field* data) const override {
     MutableRepeatedField(data)->RemoveLast();

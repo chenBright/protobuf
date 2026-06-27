@@ -20,7 +20,6 @@
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/repeated_ptr_field.h"
 
-
 // Must be the last include.
 #include "google/protobuf/port_def.inc"  // NOLINT
 
@@ -388,8 +387,9 @@ void ReflectionVisit::VisitFields(MessageT& message, CallbackFn&& func,
 
         case FieldDescriptor::TYPE_BYTES:
         case FieldDescriptor::TYPE_STRING:
-          func(
-              internal::StringDynamicExtensionInfo<decltype(ext)>{ext, number});
+          func(internal::StringDynamicExtensionInfo<decltype(set),
+                                                    decltype(ext)>{set, ext,
+                                                                   number});
           break;
 
         default:

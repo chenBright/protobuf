@@ -84,7 +84,8 @@ inline TaggedStringPtr CreateString(absl::string_view value) {
 // Creates an arena allocated std::string value.
 TaggedStringPtr CreateArenaString(Arena& arena, absl::string_view s) {
   TaggedStringPtr res;
-  res.SetMutableArena(Arena::Create<std::string>(&arena, s.data(), s.length()));
+  // Initialize to FixedSizeArena state
+  res.SetFixedSizeArena(ArenaStringAccessor::create(&arena, s).underlying());
   return res;
 }
 
@@ -116,7 +117,7 @@ void ArenaStringPtr::Set(absl::string_view value, Arena* arena) {
       old->assign("garbagedata");
     }
 #else   // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    UnsafeMutablePointer()->assign(value.data(), value.length());
+    Accessor(arena) = value;
 #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   }
 }
@@ -127,8 +128,7 @@ void ArenaStringPtr::Set(const std::string& value, Arena* arena) {
   if (IsDefault()) {
     // If we're not on an arena, skip straight to a true string to avoid
     // possible copy cost later.
-    tagged_ptr_ = arena != nullptr ? CreateArenaString(*arena, value)
-                                   : CreateString(value);
+    NewString(arena, value);
   } else {
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     if (arena == nullptr) {
@@ -141,7 +141,7 @@ void ArenaStringPtr::Set(const std::string& value, Arena* arena) {
       old->assign("garbagedata");
     }
 #else   // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    UnsafeMutablePointer()->assign(value);
+    Accessor(arena) = value;
 #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   }
 }
@@ -150,13 +150,8 @@ void ArenaStringPtr::Set(std::string&& value, Arena* arena) {
   ScopedCheckPtrInvariants check(&tagged_ptr_);
   if (IsDefault()) {
     NewString(arena, std::move(value));
-  } else if (IsFixedSizeArena()) {
-    std::string* current = tagged_ptr_.Get();
-    auto* s = new (current) std::string(std::move(value));
-    arena->OwnDestructor(s);
-    tagged_ptr_.SetMutableArena(s);
-  } else /* !IsFixedSizeArena() */ {
-    *UnsafeMutablePointer() = std::move(value);
+  } else {
+    Accessor(arena) = std::move(value);
   }
 }
 
@@ -179,6 +174,42 @@ std::string* ArenaStringPtr::Mutable(const LazyString& default_value,
   }
 }
 
+MaybeArenaStringAccessor ArenaStringPtr::MutableAccessor(Arena* arena) {
+  ScopedCheckPtrInvariants check(&tagged_ptr_);
+  if (IsDefault()) {
+    std::string* string;
+    if (arena != nullptr) {
+      string = ArenaStringAccessor::create(arena).underlying();
+      tagged_ptr_.SetFixedSizeArena(string);
+    } else {
+      string = new std::string;
+      tagged_ptr_.SetAllocated(string);
+    }
+    return MaybeArenaStringAccessor(arena, string);
+  } else {
+    return Accessor(arena);
+  }
+}
+
+MaybeArenaStringAccessor ArenaStringPtr::MutableAccessor(
+    const LazyString& default_value, Arena* arena) {
+  ScopedCheckPtrInvariants check(&tagged_ptr_);
+  if (IsDefault()) {
+    std::string* string;
+    if (arena != nullptr) {
+      string =
+          ArenaStringAccessor::create(arena, default_value.get()).underlying();
+      tagged_ptr_.SetFixedSizeArena(string);
+    } else {
+      string = new std::string(default_value.get());
+      tagged_ptr_.SetAllocated(string);
+    }
+    return MaybeArenaStringAccessor(arena, string);
+  } else {
+    return Accessor(arena);
+  }
+}
+
 std::string* ArenaStringPtr::MutableNoCopy(Arena* arena) {
   ScopedCheckPtrInvariants check(&tagged_ptr_);
   if (tagged_ptr_.IsMutable()) {
@@ -193,12 +224,29 @@ std::string* ArenaStringPtr::MutableNoCopy(Arena* arena) {
 template <typename... Lazy>
 std::string* ArenaStringPtr::MutableSlow(::google::protobuf::Arena* arena,
                                          const Lazy&... lazy_default) {
+  // Turn state from FixedSizeArena to MutableArena
+  if (IsFixedSizeArena()) {
+    auto ptr = Arena::Create<std::string>(arena, *tagged_ptr_.Get());
+    tagged_ptr_.SetMutableArena(ptr);
+    return ptr;
+  }
+
   ABSL_DCHECK(IsDefault());
 
   // For empty defaults, this ends up calling the default constructor which is
   // more efficient than a copy construction from
   // GetEmptyStringAlreadyInited().
-  return NewString(arena, lazy_default.get()...);
+  if (arena == nullptr) {
+    // Turn state from Default to Allocated
+    auto ptr = new std::string(lazy_default.get()...);
+    tagged_ptr_.SetAllocated(ptr);
+    return ptr;
+  } else {
+    // Turn state from Default to MutableArena
+    auto ptr = Arena::Create<std::string>(arena, lazy_default.get()...);
+    tagged_ptr_.SetMutableArena(ptr);
+    return ptr;
+  }
 }
 
 std::string* ArenaStringPtr::Release() {
@@ -248,7 +296,7 @@ void ArenaStringPtr::ClearToEmpty() {
     // UpdateArenaString uses assign when capacity is larger than the new
     // value, which is trivially true in the donated string case.
     // const_cast<std::string*>(PtrValue<std::string>())->clear();
-    tagged_ptr_.Get()->clear();
+    ClearNonDefaultToEmpty();
   }
 }
 
@@ -259,23 +307,43 @@ void ArenaStringPtr::ClearToDefault(const LazyString& default_value,
   if (IsDefault()) {
     // Already set to default -- do nothing.
   } else {
-    UnsafeMutablePointer()->assign(default_value.get());
+    Accessor(arena) = default_value.get();
   }
 }
 
+// FixedSizeArena implement
+const char* EpsCopyInputStream::ReadArenaString(const char* ptr, int size,
+                                                ArenaStringAccessor s) {
+  auto* buffer = s.__resize_default_init(size);
+
+  if (size <= buffer_end_ + kSlopBytes - ptr) {
+    memcpy(buffer, ptr, size);
+    return ptr + size;
+  }
+
+  return AppendSize(ptr, size, [&](const char* p, int s) {
+    memcpy(buffer, p, s);
+    buffer += s;
+  });
+}
+
+// FixedSizeArena entry
 const char* EpsCopyInputStream::ReadArenaString(const char* ptr,
-                                                ArenaStringPtr* s,
-                                                Arena* arena) {
-  ScopedCheckPtrInvariants check(&s->tagged_ptr_);
-  ABSL_DCHECK(arena != nullptr);
-
-  int size = ReadSize(&ptr);
+                                                ArenaStringAccessor s) {
+  auto size = ReadSize(&ptr);
   if (!ptr) return nullptr;
+  return ReadArenaString(ptr, size, s);
+}
 
-  auto* str = s->NewString(arena);
-  ptr = ReadString(ptr, size, str);
-  GOOGLE_PROTOBUF_PARSER_ASSERT(ptr);
-  return ptr;
+const char* EpsCopyInputStream::ReadArenaString(const char* ptr,
+                                                MaybeArenaStringAccessor s) {
+  if (s.arena() != nullptr) {
+    return ReadArenaString(ptr, static_cast<ArenaStringAccessor&>(s));
+  }
+
+  auto size = ReadSize(&ptr);
+  if (!ptr) return nullptr;
+  return ReadString(ptr, size, s.underlying());
 }
 
 }  // namespace internal

@@ -164,7 +164,11 @@ void MutateNothingByVisit(Message& message) {
             it.CopyFrom({it.data(), it.size()});
           }
         } else {
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+          for (auto it : info.Mutable()) {
+#else   // GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
           for (auto& it : info.Mutable()) {
+#endif  // GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
             std::string tmp;
             tmp = it;
             it = tmp;

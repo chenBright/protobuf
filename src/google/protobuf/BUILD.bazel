@@ -454,6 +454,8 @@ cc_library(
     srcs = [
         "any_lite.cc",
         "arenastring.cc",
+        # ARENASTRING PATCH: add new file
+        "arenastring_impl.cc",
         "arenaz_sampler.cc",
         "extension_set.cc",
         "generated_enum_util.cc",
@@ -473,6 +475,8 @@ cc_library(
         "any.h",
         "arena.h",
         "arenastring.h",
+        # ARENASTRING PATCH: add new file
+        "arenastring_impl.h",
         "arenaz_sampler.h",
         "descriptor_lite.h",
         "endian.h",
@@ -814,6 +818,9 @@ filegroup(
         "map_proto2_unittest.proto",
         "map_unittest.proto",
         "unittest.proto",
+        # ARENASTRING PATCH: add new file
+        "unittest_arenastring.proto",
+        "unittest_arenastring_mutable.proto",
         "unittest_custom_options.proto",
         "unittest_embed_optimize_for.proto",
         "unittest_empty.proto",
@@ -829,6 +836,9 @@ filegroup(
         "unittest_optimize_for.proto",
         "unittest_proto3.proto",
         "unittest_proto3_arena.proto",
+        # ARENASTRING PATCH: add new file
+        "unittest_proto3_arenastring.proto",
+        "unittest_proto3_arenastring_mutable.proto",
         "unittest_proto3_arena_lite.proto",
         "unittest_proto3_bad_macros.proto",
         "unittest_proto3_extensions.proto",
@@ -1214,6 +1224,7 @@ cc_test(
     ],
 )
 
+# ARENASTRING PATCH: add new unittest
 cc_test(
     name = "arenastring_unittest",
     srcs = ["arenastring_unittest.cc"],
@@ -1221,6 +1232,23 @@ cc_test(
         ":port",
         ":protobuf",
         ":protobuf_lite",
+        "//src/google/protobuf/io",
+        "//src/google/protobuf/stubs",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "arenastring_impl_unittest",
+    srcs = ["arenastring_impl_unittest.cc"],
+    deps = [
+        ":port",
+        ":protobuf",
+        ":protobuf_lite",
+        ":cc_test_protos",
         "//src/google/protobuf/io",
         "//src/google/protobuf/stubs",
         "@com_google_absl//absl/log:absl_check",

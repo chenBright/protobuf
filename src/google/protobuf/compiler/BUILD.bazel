@@ -347,6 +347,7 @@ cc_binary(
     testonly = True,
     srcs = ["fake_plugin.cc"],
     deps = [
+        ":code_generator",
         ":plugin_cc_proto",
         "//src/google/protobuf",
         "//src/google/protobuf/io:io_win32",

@@ -318,7 +318,8 @@ class PROTOBUF_EXPORT ExtensionSet {
   void SetBool(int number, FieldType type, bool value, desc);
   void SetEnum(int number, FieldType type, int value, desc);
   void SetString(int number, FieldType type, std::string value, desc);
-  std::string* MutableString(int number, FieldType type, desc);
+  MutableStringType MutableString(int number, FieldType type, desc);
+  MaybeArenaStringAccessor MutableAccessor(int number, FieldType type, desc);
   MessageLite* MutableMessage(int number, FieldType type,
                               const MessageLite& prototype, desc);
   MessageLite* MutableMessage(const FieldDescriptor* descriptor,
@@ -382,7 +383,8 @@ class PROTOBUF_EXPORT ExtensionSet {
   void SetRepeatedBool(int number, int index, bool value);
   void SetRepeatedEnum(int number, int index, int value);
   void SetRepeatedString(int number, int index, std::string value);
-  std::string* MutableRepeatedString(int number, int index);
+  MutableStringType MutableRepeatedString(int number, int index);
+  MaybeArenaStringAccessor MutableRepeatedAccessor(int number, int index);
   MessageLite* MutableRepeatedMessage(int number, int index);
 
 #define desc const FieldDescriptor* descriptor  // avoid line wrapping
@@ -395,7 +397,8 @@ class PROTOBUF_EXPORT ExtensionSet {
   void AddBool(int number, FieldType type, bool packed, bool value, desc);
   void AddEnum(int number, FieldType type, bool packed, int value, desc);
   void AddString(int number, FieldType type, std::string value, desc);
-  std::string* AddString(int number, FieldType type, desc);
+  MutableStringType AddString(int number, FieldType type, desc);
+  MaybeArenaStringAccessor AddAccessor(int number, FieldType type, desc);
   MessageLite* AddMessage(int number, FieldType type,
                           const MessageLite& prototype, desc);
   MessageLite* AddMessage(const FieldDescriptor* descriptor,
@@ -644,7 +647,7 @@ class PROTOBUF_EXPORT ExtensionSet {
       double double_value;
       bool bool_value;
       int enum_value;
-      std::string* string_value;
+      internal::TaggedStringPtr string_value;
       MessageLite* message_value;
       LazyMessageExtension* lazymessage_value;
 
@@ -971,16 +974,16 @@ constexpr ExtensionSet::ExtensionSet(Arena* arena)
 inline void ExtensionSet::SetString(int number, FieldType type,
                                     std::string value,
                                     const FieldDescriptor* descriptor) {
-  MutableString(number, type, descriptor)->assign(std::move(value));
+  MutableAccessor(number, type, descriptor)->assign(std::move(value));
 }
 inline void ExtensionSet::SetRepeatedString(int number, int index,
                                             std::string value) {
-  MutableRepeatedString(number, index)->assign(std::move(value));
+  MutableRepeatedAccessor(number, index)->assign(std::move(value));
 }
 inline void ExtensionSet::AddString(int number, FieldType type,
                                     std::string value,
                                     const FieldDescriptor* descriptor) {
-  AddString(number, type, descriptor)->assign(std::move(value));
+  AddAccessor(number, type, descriptor)->assign(std::move(value));
 }
 // ===================================================================
 // Glue for generated extension accessors
@@ -1189,7 +1192,7 @@ PROTOBUF_DEFINE_PRIMITIVE_TYPE(bool, Bool)
 class PROTOBUF_EXPORT StringTypeTraits {
  public:
   typedef const std::string& ConstType;
-  typedef std::string* MutableType;
+  typedef MutableStringType MutableType;
   using InitType = ConstType;
   static ConstType FromInitType(InitType v) { return v; }
   typedef StringTypeTraits Singular;
@@ -1207,7 +1210,7 @@ class PROTOBUF_EXPORT StringTypeTraits {
                          const std::string& value, ExtensionSet* set) {
     set->SetString(number, field_type, value, nullptr);
   }
-  static inline std::string* Mutable(int number, FieldType field_type,
+  static inline MutableType Mutable(int number, FieldType field_type,
                                      ExtensionSet* set) {
     return set->MutableString(number, field_type, nullptr);
   }
@@ -1216,7 +1219,7 @@ class PROTOBUF_EXPORT StringTypeTraits {
 class PROTOBUF_EXPORT RepeatedStringTypeTraits {
  public:
   typedef const std::string& ConstType;
-  typedef std::string* MutableType;
+  typedef MutableStringType MutableType;
   using InitType = ConstType;
   static ConstType FromInitType(InitType v) { return v; }
   typedef RepeatedStringTypeTraits Repeated;
@@ -1240,14 +1243,14 @@ class PROTOBUF_EXPORT RepeatedStringTypeTraits {
                          ExtensionSet* set) {
     set->SetRepeatedString(number, index, value);
   }
-  static inline std::string* Mutable(int number, int index, ExtensionSet* set) {
+  static inline MutableType Mutable(int number, int index, ExtensionSet* set) {
     return set->MutableRepeatedString(number, index);
   }
   static inline void Add(int number, FieldType field_type, bool /*is_packed*/,
                          const std::string& value, ExtensionSet* set) {
     set->AddString(number, field_type, value, nullptr);
   }
-  static inline std::string* Add(int number, FieldType field_type,
+  static inline MutableType Add(int number, FieldType field_type,
                                  ExtensionSet* set) {
     return set->AddString(number, field_type, nullptr);
   }

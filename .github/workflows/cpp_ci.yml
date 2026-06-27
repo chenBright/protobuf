@@ -1,0 +1,75 @@
+name: C++ CI
+
+# Self-contained C++ test workflow for forks.
+#
+# The upstream CI (test_runner.yml -> test_cpp.yml) is gated on
+# `repository.full_name == 'protocolbuffers/protobuf'` and depends on private
+# Google resources (GAR_SERVICE_ACCOUNT secret, protocolbuffers/protobuf-ci
+# actions, and private Docker images), so it can never run on a fork.
+#
+# This workflow runs the C++ unit tests on the standard GitHub-hosted runner
+# using Bazel, with no dependency on any private resource. It is triggered on
+# every push / pull request and can also be started manually.
+
+#on:
+#  push:
+#    branches:
+#      - '**'
+#  pull_request:
+#
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
+
+env:
+  proc_num: $(nproc)
+
+jobs:
+  cpp-bazel-test:
+    name: Linux Bazel C++ (${{ matrix.config.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      # Don't cancel the other configs if one fails.
+      fail-fast: false
+      matrix:
+        config:
+          - { name: Default, flags: "" }
+          - { name: ASan, flags: "--config=asan" }
+          - { name: UBSan, flags: "--config=ubsan" }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache Bazel
+        uses: actions/cache@v4
+        with:
+          # Sanitizer builds produce different artifacts, so isolate the cache per config.
+          path: ~/.cache/bazel
+          key: bazel-cpp-${{ matrix.config.name }}-${{ runner.os }}-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'WORKSPACE', 'protobuf_deps.bzl') }}
+          restore-keys: |
+            bazel-cpp-${{ matrix.config.name }}-${{ runner.os }}-
+
+      - name: Show Bazel version
+        run: bazel version
+
+      - name: Run C++ unit tests
+        run: |
+          bazel test \
+            --keep_going \
+            --test_output=errors \
+            --verbose_failures \
+            ${{ matrix.config.flags }} \
+            //src/... //third_party/utf8_range/...

@@ -1158,11 +1158,15 @@ TEST(ArenaTest, UnsafeArenaAddAllocatedToRepeatedField) {
   arena1_message->Clear();
   {
     std::string* s = new std::string("Test");
-    arena1_message->mutable_repeated_string()->UnsafeArenaAddAllocated(s);
+    // ARENASTRING PATCH: wrap to StringHandlerType
+    arena1_message->mutable_repeated_string()->UnsafeArenaAddAllocated(
+        internal::StringHandlerType::ToUnTagged(s));
     // Should not copy.
     EXPECT_EQ(s, &arena1_message->repeated_string(0));
     EXPECT_EQ("Test", arena1_message->repeated_string(0));
-    delete arena1_message->mutable_repeated_string()->UnsafeArenaReleaseLast();
+    // ARENASTRING PATCH: unwrap StringHandlerType
+    delete arena1_message->mutable_repeated_string()
+        ->UnsafeArenaReleaseLast()->ToStringPtr();
   }
 }
 
@@ -1281,7 +1285,9 @@ TEST(ArenaTest, UnsafeArenaAddAllocated) {
   TestAllTypes* message = Arena::Create<TestAllTypes>(&arena);
   for (int i = 0; i < 10; i++) {
     std::string* arena_string = Arena::Create<std::string>(&arena);
-    message->mutable_repeated_string()->UnsafeArenaAddAllocated(arena_string);
+    // ARENASTRING PATCH: wrap to StringHandlerType
+    message->mutable_repeated_string()->UnsafeArenaAddAllocated(
+        internal::StringHandlerType::ToUnTagged(arena_string));
     EXPECT_EQ(arena_string, message->mutable_repeated_string(i));
   }
 }

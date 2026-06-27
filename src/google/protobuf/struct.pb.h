@@ -664,6 +664,7 @@ class PROTOBUF_EXPORT Value final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_string_value(
       const std::string& value);
   std::string* _internal_mutable_string_value();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_string_value_accessor();
 
   public:
   // bool bool_value = 4;
@@ -916,7 +917,7 @@ inline PROTOBUF_ALWAYS_INLINE void Value::set_string_value(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.Value.string_value)
 }
 inline std::string* Value::mutable_string_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_string_value();
+  auto _s = _internal_mutable_string_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.Value.string_value)
   return _s;
 }
@@ -946,6 +947,16 @@ inline std::string* Value::_internal_mutable_string_value() {
     _impl_.kind_.string_value_.InitDefault();
   }
   return _impl_.kind_.string_value_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor Value::_internal_mutable_string_value_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (kind_case() != kStringValue) {
+    clear_kind();
+
+    set_has_string_value();
+    _impl_.kind_.string_value_.InitDefault();
+  }
+  return _impl_.kind_.string_value_.MutableAccessor( GetArena());
 }
 inline std::string* Value::release_string_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);

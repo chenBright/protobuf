@@ -869,8 +869,10 @@ class PROTOBUF_EXPORT TcParser final {
   template <typename TagType, typename FieldType, Utf8Type utf8>
   static inline const char* RepeatedString(PROTOBUF_TC_PARAM_DECL);
 
+  // 整体代码只有此处依赖SerialArena的内部实现，比较trick先不支持这种优化
+  // 而且ArenaString实现变更后这种加速意义不大
   static inline const char* ParseRepeatedStringOnce(
-      const char* ptr, SerialArena* serial_arena, ParseContext* ctx,
+      const char* ptr, Arena* arena, ParseContext* ctx,
       RepeatedPtrField<std::string>& field);
 
   PROTOBUF_NOINLINE
