@@ -1,7 +1,6 @@
 #include <string>
 #include <type_traits>
 #include <utility>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 // clang-format off
@@ -242,7 +241,11 @@ TEST(StringViewFieldTest, RepeatedViewSetter) {
   EXPECT_EQ(message.repeated_string_size(), 3);
   EXPECT_THAT(message.repeated_string(), ElementsAre("000", "111", "222"));
 
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  for (auto it : *message.mutable_repeated_string()) {
+#else   // GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   for (auto& it : *message.mutable_repeated_string()) {
+#endif  // GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
     it.append(it);
   }
 
@@ -284,7 +287,11 @@ TEST(StringViewFieldTest, RepeatedSetAndGetByReflection) {
   }
 
   // MutableRepeatedPtrField().
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  for (auto it :
+#else  // GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   for (auto& it :
+#endif / GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
        *reflection->MutableRepeatedPtrField<std::string>(&message, field)) {
     it.append(it);
   }

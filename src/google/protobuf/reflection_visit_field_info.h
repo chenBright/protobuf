@@ -189,14 +189,18 @@ struct DynamicExtensionInfoHelper {
 #undef PROTOBUF_REPEATED_PTR_FIELD_METHODS
 
   static absl::string_view GetStringView(const Extension& ext) {
-    return *ext.string_value;
+    return *ext.string_value.Get();
   }
-  static void SetStringView(Extension& ext, absl::string_view value) {
-    ext.string_value->assign(value.data(), value.size());
+  static void SetStringView(Extension& ext, Arena* arena,
+                            absl::string_view value) {
+    MaybeArenaStringAccessor(
+        ext.string_value.IsFixedSizeArena() ? arena : nullptr,
+        ext.string_value.Get())
+        ->assign(value.data(), value.size());
   }
   static void ClearStringView(Extension& ext) {
     ext.is_cleared = true;
-    ext.string_value->clear();
+    MaybeArenaStringAccessor::clear(ext.string_value.Get());
   }
 
   static const Message& GetMessage(const Extension& ext) {
@@ -485,10 +489,10 @@ struct StringDynamicFieldInfo {
 ////////////////////////////////////////////////////////////////////////
 // Extension string fields
 ////////////////////////////////////////////////////////////////////////
-template <typename ExtensionT>
+template <typename ExtensionS, typename ExtensionT>
 struct StringDynamicExtensionInfo {
-  constexpr StringDynamicExtensionInfo(ExtensionT& e, int n)
-      : ext(e), ext_number(n) {}
+  constexpr StringDynamicExtensionInfo(ExtensionS& s, ExtensionT& e, int n)
+      : set(s), ext(e), ext_number(n) {}
 
   int number() const { return ext_number; }
   FieldDescriptor::Type type() const {
@@ -499,7 +503,7 @@ struct StringDynamicExtensionInfo {
     return DynamicExtensionInfoHelper::GetStringView(ext);
   }
   void Set(absl::string_view value) {
-    DynamicExtensionInfoHelper::SetStringView(ext, value);
+    DynamicExtensionInfoHelper::SetStringView(ext, set.GetArena(), value);
   }
   void Clear() { DynamicExtensionInfoHelper::ClearStringView(ext); }
   size_t FieldByteSize() const { return WireFormatLite::StringSize(Get()); }
@@ -512,6 +516,7 @@ struct StringDynamicExtensionInfo {
   static constexpr bool is_oneof = false;     // NOLINT
   static constexpr bool is_cord = false;      // NOLINT
 
+  ExtensionS& set;
   ExtensionT& ext;
   int ext_number;
 };

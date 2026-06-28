@@ -2098,23 +2098,30 @@ void MessageGenerator::GenerateInlineMethods(io::Printer* p) {
 
 void MessageGenerator::GenerateSchema(io::Printer* p, int offset,
                                       int has_offset) {
-  has_offset = !has_bit_indices_.empty() || IsMapEntryMessage(descriptor_)
-                   ? offset + has_offset
-                   : -1;
+  // ARENASTRING PATCH: schema of Message is composed as
+  //                      <metadata>[has_bit_indices][inlined_string_indices]
+  //                      has_offset = sizeof(metadata)
+  //                      offset = base offset of metadata
+  //                    original implementation dont support inlined string
+  //                    without hasbit. modify to support that
+  int has_bit_indices_offset =
+      !has_bit_indices_.empty() || IsMapEntryMessage(descriptor_)
+          ? offset + has_offset
+          : -1;
   int inlined_string_indices_offset;
   if (inlined_string_indices_.empty()) {
     inlined_string_indices_offset = -1;
   } else {
     ABSL_DCHECK_NE(has_offset, -1);
     ABSL_DCHECK(!IsMapEntryMessage(descriptor_));
-    inlined_string_indices_offset = has_offset + has_bit_indices_.size();
+    inlined_string_indices_offset = offset + has_offset + has_bit_indices_.size();
   }
 
   auto v = p->WithVars(ClassVars(descriptor_, options_));
   p->Emit(
       {
           {"offset", offset},
-          {"has_offset", has_offset},
+          {"has_offset", has_bit_indices_offset},
           {"string_offsets", inlined_string_indices_offset},
       },
       R"cc(

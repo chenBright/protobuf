@@ -138,15 +138,12 @@ const char* ExtensionSet::ParseFieldWithExtensionInfo(
 
       case WireFormatLite::TYPE_BYTES:
       case WireFormatLite::TYPE_STRING: {
-        std::string* value =
-            extension.is_repeated
-                ? AddString(number, WireFormatLite::TYPE_STRING,
-                            extension.descriptor)
-                : MutableString(number, WireFormatLite::TYPE_STRING,
-                                extension.descriptor);
-        int size = ReadSize(&ptr);
-        GOOGLE_PROTOBUF_PARSER_ASSERT(ptr);
-        return ctx->ReadString(ptr, size, value);
+        auto value = extension.is_repeated
+                         ? AddAccessor(number, WireFormatLite::TYPE_STRING,
+                                       extension.descriptor)
+                         : MutableAccessor(number, WireFormatLite::TYPE_STRING,
+                                           extension.descriptor);
+        return ctx->ReadArenaString(ptr, value);
       }
 
       case WireFormatLite::TYPE_GROUP: {

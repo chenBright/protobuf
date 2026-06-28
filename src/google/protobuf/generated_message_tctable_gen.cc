@@ -770,6 +770,9 @@ uint16_t MakeTypeCardForField(
           // A repeated string field uses RepeatedPtrField<std::string>
           // (unless it has a ctype option; see above).
           type_card |= fl::kRepSString;
+        } else if (options.is_string_inlined) {
+          // 按照is_string_inlined标记设置kRepIString类型标记
+          type_card |= fl::kRepIString;
         } else {
           // Otherwise, non-repeated string fields use ArenaStringPtr.
           type_card |= fl::kRepAString;

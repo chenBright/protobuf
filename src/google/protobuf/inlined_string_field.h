@@ -25,6 +25,8 @@
 #error "You cannot SWIG proto headers"
 #endif
 
+#define GOOGLE_PROTOBUF_INTERNAL_DONATE_STEAL_INLINE
+
 namespace google {
 namespace protobuf {
 
@@ -112,6 +114,8 @@ class PROTOBUF_EXPORT InlinedStringField {
   // This method never changes the `donating_states`.
   void Set(absl::string_view value, Arena* arena, bool donated,
            uint32_t* donating_states, uint32_t mask, MessageLite* msg);
+  void Set(const std::string& value, Arena* arena, bool donated,
+           uint32_t* donating_states, uint32_t mask, MessageLite* msg);
 
   // Rvalue Set. If this field is donated, this method will undonate this field
   // by mutating the `donating_states` according to `mask`.
@@ -130,6 +134,8 @@ class PROTOBUF_EXPORT InlinedStringField {
            uint32_t mask, MessageLite* msg);
 
   void SetBytes(absl::string_view value, Arena* arena, bool donated,
+                uint32_t* donating_states, uint32_t mask, MessageLite* msg);
+  void SetBytes(const std::string& value, Arena* arena, bool donated,
                 uint32_t* donating_states, uint32_t mask, MessageLite* msg);
 
   void SetBytes(std::string&& value, Arena* arena, bool donated,
@@ -163,6 +169,10 @@ class PROTOBUF_EXPORT InlinedStringField {
   std::string* Mutable(const LazyString& default_value, Arena* arena,
                        bool donated, uint32_t* donating_states, uint32_t mask,
                        MessageLite* msg);
+  MaybeArenaStringAccessor MutableAccessor(Arena* arena, bool donated,
+                                           uint32_t* donating_states,
+                                           uint32_t mask, MessageLite* msg);
+  MaybeArenaStringAccessor MutableAccessor(Arena* arena, bool donated);
 
   // Mutable(nullptr_t) is an overload to explicitly support Mutable(nullptr)
   // calls used by the internal parser logic. This provides API equivalence with
@@ -320,7 +330,7 @@ class PROTOBUF_EXPORT InlinedStringField {
   // always be the empty std::string.
   PROTOBUF_NDEBUG_INLINE void ClearToEmpty() { ClearNonDefaultToEmpty(); }
   PROTOBUF_NDEBUG_INLINE void ClearNonDefaultToEmpty() {
-    get_mutable()->clear();
+    MaybeArenaStringAccessor::clear(get_mutable());
   }
 
   // Clears content, but keeps allocated std::string if arena != nullptr, to
@@ -372,7 +382,6 @@ inline InlinedStringField::InlinedStringField(
   new (get_mutable()) std::string(default_value);
 }
 
-
 #ifdef GOOGLE_PROTOBUF_INTERNAL_DONATE_STEAL_INLINE
 constexpr uint32_t InitDonatingStates() { return ~0u; }
 inline void InternalRegisterArenaDtor(Arena*, void*, void (*)(void*)) {}
@@ -390,8 +399,8 @@ inline InlinedStringField::InlinedStringField(Arena* /*arena*/) { Init(); }
 
 inline InlinedStringField::InlinedStringField(Arena* arena,
                                               const InlinedStringField& rhs) {
-  const std::string& src = *rhs.get_const();
-  new (value_) std::string(src);
+  Init();
+  MaybeArenaStringAccessor(arena, get_mutable()) = *rhs.get_const();
 }
 
 inline const std::string& InlinedStringField::GetNoArena() const {
@@ -441,7 +450,7 @@ inline PROTOBUF_NDEBUG_INLINE void InlinedStringField::InternalSwap(
   (void)rhs_arena_dtor_registered;
   (void)lhs_msg;
   (void)rhs_msg;
-  lhs->get_mutable()->swap(*rhs->get_mutable());
+  MaybeArenaStringAccessor::swap(lhs->get_mutable(), rhs->get_mutable());
 #endif
 }
 
@@ -450,10 +459,17 @@ inline void InlinedStringField::Set(absl::string_view value, Arena* arena,
                                     uint32_t /*mask*/, MessageLite* /*msg*/) {
   (void)arena;
   (void)donated;
-  SetNoArena(value);
+  MutableAccessor(arena, donated) = value;
 }
 
-inline void InlinedStringField::Set(const char* str, ::google::protobuf::Arena* arena,
+inline void InlinedStringField::Set(const std::string& value, Arena* arena,
+                                    bool donated, uint32_t* /*donating_states*/,
+                                    uint32_t /*mask*/, MessageLite* /*msg*/) {
+  MutableAccessor(arena, donated) = value;
+}
+
+inline void InlinedStringField::Set(const char* str,
+                                    ::google::protobuf::Arena* arena,
                                     bool donated, uint32_t* donating_states,
                                     uint32_t mask, MessageLite* msg) {
   Set(absl::string_view(str), arena, donated, donating_states, mask, msg);
@@ -467,6 +483,13 @@ inline void InlinedStringField::Set(const char* str, size_t size,
 }
 
 inline void InlinedStringField::SetBytes(absl::string_view value, Arena* arena,
+                                         bool donated,
+                                         uint32_t* donating_states,
+                                         uint32_t mask, MessageLite* msg) {
+  Set(value, arena, donated, donating_states, mask, msg);
+}
+
+inline void InlinedStringField::SetBytes(const std::string& value, Arena* arena,
                                          bool donated,
                                          uint32_t* donating_states,
                                          uint32_t mask, MessageLite* msg) {
@@ -509,6 +532,17 @@ inline void InlinedStringField::SetBytes(
     ::google::protobuf::Arena* arena, bool donated, uint32_t* donating_states,
     uint32_t mask, MessageLite* msg) {
   Set(const_string_ref.get(), arena, donated, donating_states, mask, msg);
+}
+
+inline MaybeArenaStringAccessor InlinedStringField::MutableAccessor(
+    Arena* arena, bool donated, uint32_t* /*donating_states*/,
+    uint32_t /*mask*/, MessageLite* /*msg*/) {
+  return MutableAccessor(arena, donated);
+}
+
+inline MaybeArenaStringAccessor InlinedStringField::MutableAccessor(
+    Arena* arena, bool donated) {
+  return MaybeArenaStringAccessor(donated ? arena : nullptr, get_mutable());
 }
 
 inline std::string* InlinedStringField::UnsafeMutablePointer() {

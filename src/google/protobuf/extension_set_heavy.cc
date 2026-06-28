@@ -399,8 +399,8 @@ size_t ExtensionSet::Extension::SpaceUsedExcludingSelfLong() const {
   } else {
     switch (cpp_type(type)) {
       case FieldDescriptor::CPPTYPE_STRING:
-        total_size += sizeof(*string_value) +
-                      StringSpaceUsedExcludingSelfLong(*string_value);
+        total_size += sizeof(*string_value.Get()) +
+                      StringSpaceUsedExcludingSelfLong(*string_value.Get());
         break;
       case FieldDescriptor::CPPTYPE_MESSAGE:
         if (is_lazy) {

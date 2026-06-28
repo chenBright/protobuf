@@ -1971,9 +1971,13 @@ void Reflection::SetString(Message* message, const FieldDescriptor* field,
                            const absl::Cord& value) const {
   USAGE_MUTABLE_CHECK_ALL(SetString, SINGULAR, STRING);
   if (field->is_extension()) {
-    return absl::CopyCordToString(value,
-                                  MutableExtensionSet(message)->MutableString(
-                                      field->number(), field->type(), field));
+    auto accessor = MutableExtensionSet(message)->MutableAccessor(
+        field->number(), field->type(), field);
+    accessor.clear();
+    accessor.reserve(value.size());
+    for (auto chunk : value.Chunks()) {
+      accessor.append(chunk);
+    }
   } else {
     switch (internal::cpp::EffectiveStringCType(field)) {
       case FieldOptions::CORD:
@@ -2079,8 +2083,8 @@ void Reflection::SetRepeatedString(Message* message,
     switch (field->options().ctype()) {
       default:  // TODO:  Support other string reps.
       case FieldOptions::STRING:
-        MutableRepeatedField<std::string>(message, field, index)
-            ->assign(std::move(value));
+        MutableRaw<RepeatedPtrField<std::string>>(message, field)
+            ->MutableAccessor(index)->assign(std::move(value));
         break;
     }
   }
@@ -2097,7 +2101,8 @@ void Reflection::AddString(Message* message, const FieldDescriptor* field,
     switch (field->options().ctype()) {
       default:  // TODO:  Support other string reps.
       case FieldOptions::STRING:
-        AddField<std::string>(message, field)->assign(std::move(value));
+        MutableRaw<RepeatedPtrField<std::string>>(message, field)
+            ->Add(std::move(value));
         break;
     }
   }

@@ -1141,10 +1141,17 @@ TEST(ExtensionSetTest, RepeatedFields) {
     ASSERT_EQ(x, 4321);
   }
   // Test one string field.
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  for (auto x :
+       *message.MutableRepeatedExtension(unittest::repeated_string_extension)) {
+    x = "test_range_based_for";
+  }
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   for (auto& x :
        *message.MutableRepeatedExtension(unittest::repeated_string_extension)) {
     x = "test_range_based_for";
   }
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   for (const auto& x :
        message.GetRepeatedExtension(unittest::repeated_string_extension)) {
     ASSERT_TRUE(x == "test_range_based_for");

@@ -848,6 +848,7 @@ class PROTOBUF_EXPORT UninterpretedOption_NamePart final : public ::google::prot
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name_part(
       const std::string& value);
   std::string* _internal_mutable_name_part();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_part_accessor();
 
   public:
   // required bool is_extension = 2;
@@ -1105,6 +1106,7 @@ class PROTOBUF_EXPORT SourceCodeInfo_Location final : public ::google::protobuf:
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_leading_comments(
       const std::string& value);
   std::string* _internal_mutable_leading_comments();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_leading_comments_accessor();
 
   public:
   // optional string trailing_comments = 4;
@@ -1122,6 +1124,7 @@ class PROTOBUF_EXPORT SourceCodeInfo_Location final : public ::google::protobuf:
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_trailing_comments(
       const std::string& value);
   std::string* _internal_mutable_trailing_comments();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_trailing_comments_accessor();
 
   public:
   // @@protoc_insertion_point(class_scope:google.protobuf.SourceCodeInfo.Location)
@@ -1347,6 +1350,7 @@ class PROTOBUF_EXPORT GeneratedCodeInfo_Annotation final : public ::google::prot
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_source_file(
       const std::string& value);
   std::string* _internal_mutable_source_file();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_source_file_accessor();
 
   public:
   // optional int32 begin = 3;
@@ -1565,6 +1569,7 @@ class PROTOBUF_EXPORT FieldOptions_FeatureSupport final : public ::google::proto
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_deprecation_warning(
       const std::string& value);
   std::string* _internal_mutable_deprecation_warning();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_deprecation_warning_accessor();
 
   public:
   // optional .google.protobuf.Edition edition_introduced = 1;
@@ -1779,6 +1784,7 @@ class PROTOBUF_EXPORT FieldOptions_EditionDefault final : public ::google::proto
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_value(
       const std::string& value);
   std::string* _internal_mutable_value();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_value_accessor();
 
   public:
   // optional .google.protobuf.Edition edition = 3;
@@ -2514,6 +2520,7 @@ class PROTOBUF_EXPORT ExtensionRangeOptions_Declaration final : public ::google:
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_full_name(
       const std::string& value);
   std::string* _internal_mutable_full_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_full_name_accessor();
 
   public:
   // optional string type = 3;
@@ -2531,6 +2538,7 @@ class PROTOBUF_EXPORT ExtensionRangeOptions_Declaration final : public ::google:
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_type(
       const std::string& value);
   std::string* _internal_mutable_type();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_type_accessor();
 
   public:
   // optional int32 number = 1;
@@ -3142,6 +3150,7 @@ class PROTOBUF_EXPORT UninterpretedOption final : public ::google::protobuf::Mes
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_identifier_value(
       const std::string& value);
   std::string* _internal_mutable_identifier_value();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_identifier_value_accessor();
 
   public:
   // optional bytes string_value = 7;
@@ -3159,6 +3168,7 @@ class PROTOBUF_EXPORT UninterpretedOption final : public ::google::protobuf::Mes
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_string_value(
       const std::string& value);
   std::string* _internal_mutable_string_value();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_string_value_accessor();
 
   public:
   // optional string aggregate_value = 8;
@@ -3176,6 +3186,7 @@ class PROTOBUF_EXPORT UninterpretedOption final : public ::google::protobuf::Mes
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_aggregate_value(
       const std::string& value);
   std::string* _internal_mutable_aggregate_value();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_aggregate_value_accessor();
 
   public:
   // optional uint64 positive_int_value = 4;
@@ -5623,6 +5634,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
     kJavaGenericServicesFieldNumber = 17,
     kPyGenericServicesFieldNumber = 18,
     kDeprecatedFieldNumber = 23,
+    kCcMutableDonatedStringFieldNumber = 32,
     kOptimizeForFieldNumber = 9,
     kCcEnableArenasFieldNumber = 31,
   };
@@ -5658,6 +5670,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_java_package(
       const std::string& value);
   std::string* _internal_mutable_java_package();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_java_package_accessor();
 
   public:
   // optional string java_outer_classname = 8;
@@ -5675,6 +5688,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_java_outer_classname(
       const std::string& value);
   std::string* _internal_mutable_java_outer_classname();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_java_outer_classname_accessor();
 
   public:
   // optional string go_package = 11;
@@ -5692,6 +5706,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_go_package(
       const std::string& value);
   std::string* _internal_mutable_go_package();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_go_package_accessor();
 
   public:
   // optional string objc_class_prefix = 36;
@@ -5709,6 +5724,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_objc_class_prefix(
       const std::string& value);
   std::string* _internal_mutable_objc_class_prefix();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_objc_class_prefix_accessor();
 
   public:
   // optional string csharp_namespace = 37;
@@ -5726,6 +5742,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_csharp_namespace(
       const std::string& value);
   std::string* _internal_mutable_csharp_namespace();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_csharp_namespace_accessor();
 
   public:
   // optional string swift_prefix = 39;
@@ -5743,6 +5760,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_swift_prefix(
       const std::string& value);
   std::string* _internal_mutable_swift_prefix();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_swift_prefix_accessor();
 
   public:
   // optional string php_class_prefix = 40;
@@ -5760,6 +5778,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_php_class_prefix(
       const std::string& value);
   std::string* _internal_mutable_php_class_prefix();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_php_class_prefix_accessor();
 
   public:
   // optional string php_namespace = 41;
@@ -5777,6 +5796,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_php_namespace(
       const std::string& value);
   std::string* _internal_mutable_php_namespace();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_php_namespace_accessor();
 
   public:
   // optional string php_metadata_namespace = 44;
@@ -5794,6 +5814,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_php_metadata_namespace(
       const std::string& value);
   std::string* _internal_mutable_php_metadata_namespace();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_php_metadata_namespace_accessor();
 
   public:
   // optional string ruby_package = 45;
@@ -5811,6 +5832,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_ruby_package(
       const std::string& value);
   std::string* _internal_mutable_ruby_package();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_ruby_package_accessor();
 
   public:
   // optional .google.protobuf.FeatureSet features = 50;
@@ -5903,6 +5925,17 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   private:
   bool _internal_deprecated() const;
   void _internal_set_deprecated(bool value);
+
+  public:
+  // optional bool cc_mutable_donated_string = 32 [default = false];
+  bool has_cc_mutable_donated_string() const;
+  void clear_cc_mutable_donated_string() ;
+  bool cc_mutable_donated_string() const;
+  void set_cc_mutable_donated_string(bool value);
+
+  private:
+  bool _internal_cc_mutable_donated_string() const;
+  void _internal_set_cc_mutable_donated_string(bool value);
 
   public:
   // optional .google.protobuf.FileOptions.OptimizeMode optimize_for = 9 [default = SPEED];
@@ -6111,7 +6144,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      5, 21, 3,
+      5, 22, 3,
       202, 12>
       _table_;
 
@@ -6152,6 +6185,7 @@ class PROTOBUF_EXPORT FileOptions final : public ::google::protobuf::Message
     bool java_generic_services_;
     bool py_generic_services_;
     bool deprecated_;
+    bool cc_mutable_donated_string_;
     int optimize_for_;
     bool cc_enable_arenas_;
     PROTOBUF_TSAN_DECLARE_MEMBER
@@ -8430,6 +8464,7 @@ class PROTOBUF_EXPORT OneofDescriptorProto final : public ::google::protobuf::Me
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional .google.protobuf.OneofOptions options = 2;
@@ -8633,6 +8668,7 @@ class PROTOBUF_EXPORT MethodDescriptorProto final : public ::google::protobuf::M
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional string input_type = 2;
@@ -8650,6 +8686,7 @@ class PROTOBUF_EXPORT MethodDescriptorProto final : public ::google::protobuf::M
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_input_type(
       const std::string& value);
   std::string* _internal_mutable_input_type();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_input_type_accessor();
 
   public:
   // optional string output_type = 3;
@@ -8667,6 +8704,7 @@ class PROTOBUF_EXPORT MethodDescriptorProto final : public ::google::protobuf::M
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_output_type(
       const std::string& value);
   std::string* _internal_mutable_output_type();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_output_type_accessor();
 
   public:
   // optional .google.protobuf.MethodOptions options = 4;
@@ -8956,6 +8994,7 @@ class PROTOBUF_EXPORT FieldDescriptorProto final : public ::google::protobuf::Me
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional string extendee = 2;
@@ -8973,6 +9012,7 @@ class PROTOBUF_EXPORT FieldDescriptorProto final : public ::google::protobuf::Me
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_extendee(
       const std::string& value);
   std::string* _internal_mutable_extendee();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_extendee_accessor();
 
   public:
   // optional string type_name = 6;
@@ -8990,6 +9030,7 @@ class PROTOBUF_EXPORT FieldDescriptorProto final : public ::google::protobuf::Me
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_type_name(
       const std::string& value);
   std::string* _internal_mutable_type_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_type_name_accessor();
 
   public:
   // optional string default_value = 7;
@@ -9007,6 +9048,7 @@ class PROTOBUF_EXPORT FieldDescriptorProto final : public ::google::protobuf::Me
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_default_value(
       const std::string& value);
   std::string* _internal_mutable_default_value();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_default_value_accessor();
 
   public:
   // optional string json_name = 10;
@@ -9024,6 +9066,7 @@ class PROTOBUF_EXPORT FieldDescriptorProto final : public ::google::protobuf::Me
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_json_name(
       const std::string& value);
   std::string* _internal_mutable_json_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_json_name_accessor();
 
   public:
   // optional .google.protobuf.FieldOptions options = 8;
@@ -9288,6 +9331,7 @@ class PROTOBUF_EXPORT EnumValueDescriptorProto final : public ::google::protobuf
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional .google.protobuf.EnumValueOptions options = 3;
@@ -9723,6 +9767,7 @@ class PROTOBUF_EXPORT ServiceDescriptorProto final : public ::google::protobuf::
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional .google.protobuf.ServiceOptions options = 3;
@@ -9989,6 +10034,7 @@ class PROTOBUF_EXPORT EnumDescriptorProto final : public ::google::protobuf::Mes
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional .google.protobuf.EnumOptions options = 3;
@@ -10348,6 +10394,7 @@ class PROTOBUF_EXPORT DescriptorProto final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional .google.protobuf.MessageOptions options = 7;
@@ -10698,6 +10745,7 @@ class PROTOBUF_EXPORT FileDescriptorProto final : public ::google::protobuf::Mes
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
       const std::string& value);
   std::string* _internal_mutable_name();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_name_accessor();
 
   public:
   // optional string package = 2;
@@ -10715,6 +10763,7 @@ class PROTOBUF_EXPORT FileDescriptorProto final : public ::google::protobuf::Mes
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_package(
       const std::string& value);
   std::string* _internal_mutable_package();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_package_accessor();
 
   public:
   // optional string syntax = 12;
@@ -10732,6 +10781,7 @@ class PROTOBUF_EXPORT FileDescriptorProto final : public ::google::protobuf::Mes
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_syntax(
       const std::string& value);
   std::string* _internal_mutable_syntax();
+  ::google::protobuf::MaybeArenaStringAccessor _internal_mutable_syntax_accessor();
 
   public:
   // optional .google.protobuf.FileOptions options = 8;
@@ -11094,7 +11144,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileDescriptorProto::set_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileDescriptorProto.name)
 }
 inline std::string* FileDescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileDescriptorProto.name)
   return _s;
 }
@@ -11111,6 +11161,11 @@ inline std::string* FileDescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileDescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* FileDescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -11165,7 +11220,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileDescriptorProto::set_package(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileDescriptorProto.package)
 }
 inline std::string* FileDescriptorProto::mutable_package() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_package();
+  auto _s = _internal_mutable_package();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileDescriptorProto.package)
   return _s;
 }
@@ -11182,6 +11237,11 @@ inline std::string* FileDescriptorProto::_internal_mutable_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.package_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileDescriptorProto::_internal_mutable_package_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.package_.MutableAccessor( GetArena());
 }
 inline std::string* FileDescriptorProto::release_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -11226,7 +11286,7 @@ inline void FileDescriptorProto::clear_dependency() {
 inline std::string* FileDescriptorProto::add_dependency()
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  std::string* _s = _internal_mutable_dependency()->Add();
+  auto _s = _internal_mutable_dependency()->AddString();
   // @@protoc_insertion_point(field_add_mutable:google.protobuf.FileDescriptorProto.dependency)
   return _s;
 }
@@ -11238,35 +11298,36 @@ inline const std::string& FileDescriptorProto::dependency(int index) const
 inline std::string* FileDescriptorProto::mutable_dependency(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileDescriptorProto.dependency)
-  return _internal_mutable_dependency()->Mutable(index);
+  return _internal_mutable_dependency()->MutableString(index);
 }
 inline void FileDescriptorProto::set_dependency(int index, const std::string& value) {
-  _internal_mutable_dependency()->Mutable(index)->assign(value);
+  _internal_mutable_dependency()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::set_dependency(int index, std::string&& value) {
-  _internal_mutable_dependency()->Mutable(index)->assign(std::move(value));
+  _internal_mutable_dependency()->MutableAccessor(index)->assign(
+      std::move(value));
   // @@protoc_insertion_point(field_set:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::set_dependency(int index, const char* value) {
   ABSL_DCHECK(value != nullptr);
-  _internal_mutable_dependency()->Mutable(index)->assign(value);
+  _internal_mutable_dependency()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::set_dependency(int index, const char* value,
                               std::size_t size) {
-  _internal_mutable_dependency()->Mutable(index)->assign(
+  _internal_mutable_dependency()->MutableAccessor(index)->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_set_pointer:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::set_dependency(int index, absl::string_view value) {
-  _internal_mutable_dependency()->Mutable(index)->assign(
+  _internal_mutable_dependency()->MutableAccessor(index)->assign(
       value.data(), value.size());
   // @@protoc_insertion_point(field_set_string_piece:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::add_dependency(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_dependency()->Add()->assign(value);
+  _internal_mutable_dependency()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::add_dependency(std::string&& value) {
@@ -11277,19 +11338,18 @@ inline void FileDescriptorProto::add_dependency(std::string&& value) {
 inline void FileDescriptorProto::add_dependency(const char* value) {
   ABSL_DCHECK(value != nullptr);
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_dependency()->Add()->assign(value);
+  _internal_mutable_dependency()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::add_dependency(const char* value, std::size_t size) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_dependency()->Add()->assign(
+  _internal_mutable_dependency()->AddAccessor()->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_add_pointer:google.protobuf.FileDescriptorProto.dependency)
 }
 inline void FileDescriptorProto::add_dependency(absl::string_view value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_dependency()->Add()->assign(value.data(),
-                                                     value.size());
+  _internal_mutable_dependency()->AddAccessor()->assign(value.data(), value.size());
   // @@protoc_insertion_point(field_add_string_piece:google.protobuf.FileDescriptorProto.dependency)
 }
 inline const ::google::protobuf::RepeatedPtrField<std::string>&
@@ -11816,7 +11876,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileDescriptorProto::set_syntax(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileDescriptorProto.syntax)
 }
 inline std::string* FileDescriptorProto::mutable_syntax() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_syntax();
+  auto _s = _internal_mutable_syntax();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileDescriptorProto.syntax)
   return _s;
 }
@@ -11833,6 +11893,11 @@ inline std::string* FileDescriptorProto::_internal_mutable_syntax() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000004u;
   return _impl_.syntax_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileDescriptorProto::_internal_mutable_syntax_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  return _impl_.syntax_.MutableAccessor( GetArena());
 }
 inline std::string* FileDescriptorProto::release_syntax() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -12136,7 +12201,7 @@ inline PROTOBUF_ALWAYS_INLINE void DescriptorProto::set_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.DescriptorProto.name)
 }
 inline std::string* DescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.DescriptorProto.name)
   return _s;
 }
@@ -12153,6 +12218,11 @@ inline std::string* DescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor DescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* DescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -12636,7 +12706,7 @@ inline void DescriptorProto::clear_reserved_name() {
 inline std::string* DescriptorProto::add_reserved_name()
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  std::string* _s = _internal_mutable_reserved_name()->Add();
+  auto _s = _internal_mutable_reserved_name()->AddString();
   // @@protoc_insertion_point(field_add_mutable:google.protobuf.DescriptorProto.reserved_name)
   return _s;
 }
@@ -12648,35 +12718,36 @@ inline const std::string& DescriptorProto::reserved_name(int index) const
 inline std::string* DescriptorProto::mutable_reserved_name(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   // @@protoc_insertion_point(field_mutable:google.protobuf.DescriptorProto.reserved_name)
-  return _internal_mutable_reserved_name()->Mutable(index);
+  return _internal_mutable_reserved_name()->MutableString(index);
 }
 inline void DescriptorProto::set_reserved_name(int index, const std::string& value) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(value);
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::set_reserved_name(int index, std::string&& value) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(std::move(value));
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(
+      std::move(value));
   // @@protoc_insertion_point(field_set:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::set_reserved_name(int index, const char* value) {
   ABSL_DCHECK(value != nullptr);
-  _internal_mutable_reserved_name()->Mutable(index)->assign(value);
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::set_reserved_name(int index, const char* value,
                               std::size_t size) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_set_pointer:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::set_reserved_name(int index, absl::string_view value) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(
       value.data(), value.size());
   // @@protoc_insertion_point(field_set_string_piece:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::add_reserved_name(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(value);
+  _internal_mutable_reserved_name()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::add_reserved_name(std::string&& value) {
@@ -12687,19 +12758,18 @@ inline void DescriptorProto::add_reserved_name(std::string&& value) {
 inline void DescriptorProto::add_reserved_name(const char* value) {
   ABSL_DCHECK(value != nullptr);
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(value);
+  _internal_mutable_reserved_name()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::add_reserved_name(const char* value, std::size_t size) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(
+  _internal_mutable_reserved_name()->AddAccessor()->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_add_pointer:google.protobuf.DescriptorProto.reserved_name)
 }
 inline void DescriptorProto::add_reserved_name(absl::string_view value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(value.data(),
-                                                     value.size());
+  _internal_mutable_reserved_name()->AddAccessor()->assign(value.data(), value.size());
   // @@protoc_insertion_point(field_add_string_piece:google.protobuf.DescriptorProto.reserved_name)
 }
 inline const ::google::protobuf::RepeatedPtrField<std::string>&
@@ -12780,7 +12850,7 @@ inline PROTOBUF_ALWAYS_INLINE void ExtensionRangeOptions_Declaration::set_full_n
   // @@protoc_insertion_point(field_set:google.protobuf.ExtensionRangeOptions.Declaration.full_name)
 }
 inline std::string* ExtensionRangeOptions_Declaration::mutable_full_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_full_name();
+  auto _s = _internal_mutable_full_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.ExtensionRangeOptions.Declaration.full_name)
   return _s;
 }
@@ -12797,6 +12867,11 @@ inline std::string* ExtensionRangeOptions_Declaration::_internal_mutable_full_na
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.full_name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor ExtensionRangeOptions_Declaration::_internal_mutable_full_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.full_name_.MutableAccessor( GetArena());
 }
 inline std::string* ExtensionRangeOptions_Declaration::release_full_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -12851,7 +12926,7 @@ inline PROTOBUF_ALWAYS_INLINE void ExtensionRangeOptions_Declaration::set_type(A
   // @@protoc_insertion_point(field_set:google.protobuf.ExtensionRangeOptions.Declaration.type)
 }
 inline std::string* ExtensionRangeOptions_Declaration::mutable_type() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_type();
+  auto _s = _internal_mutable_type();
   // @@protoc_insertion_point(field_mutable:google.protobuf.ExtensionRangeOptions.Declaration.type)
   return _s;
 }
@@ -12868,6 +12943,11 @@ inline std::string* ExtensionRangeOptions_Declaration::_internal_mutable_type() 
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.type_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor ExtensionRangeOptions_Declaration::_internal_mutable_type_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.type_.MutableAccessor( GetArena());
 }
 inline std::string* ExtensionRangeOptions_Declaration::release_type() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -13209,7 +13289,7 @@ inline PROTOBUF_ALWAYS_INLINE void FieldDescriptorProto::set_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FieldDescriptorProto.name)
 }
 inline std::string* FieldDescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FieldDescriptorProto.name)
   return _s;
 }
@@ -13226,6 +13306,11 @@ inline std::string* FieldDescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FieldDescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* FieldDescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -13366,7 +13451,7 @@ inline PROTOBUF_ALWAYS_INLINE void FieldDescriptorProto::set_type_name(Arg_&& ar
   // @@protoc_insertion_point(field_set:google.protobuf.FieldDescriptorProto.type_name)
 }
 inline std::string* FieldDescriptorProto::mutable_type_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_type_name();
+  auto _s = _internal_mutable_type_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FieldDescriptorProto.type_name)
   return _s;
 }
@@ -13383,6 +13468,11 @@ inline std::string* FieldDescriptorProto::_internal_mutable_type_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000004u;
   return _impl_.type_name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FieldDescriptorProto::_internal_mutable_type_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  return _impl_.type_name_.MutableAccessor( GetArena());
 }
 inline std::string* FieldDescriptorProto::release_type_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -13437,7 +13527,7 @@ inline PROTOBUF_ALWAYS_INLINE void FieldDescriptorProto::set_extendee(Arg_&& arg
   // @@protoc_insertion_point(field_set:google.protobuf.FieldDescriptorProto.extendee)
 }
 inline std::string* FieldDescriptorProto::mutable_extendee() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_extendee();
+  auto _s = _internal_mutable_extendee();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FieldDescriptorProto.extendee)
   return _s;
 }
@@ -13454,6 +13544,11 @@ inline std::string* FieldDescriptorProto::_internal_mutable_extendee() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.extendee_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FieldDescriptorProto::_internal_mutable_extendee_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.extendee_.MutableAccessor( GetArena());
 }
 inline std::string* FieldDescriptorProto::release_extendee() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -13508,7 +13603,7 @@ inline PROTOBUF_ALWAYS_INLINE void FieldDescriptorProto::set_default_value(Arg_&
   // @@protoc_insertion_point(field_set:google.protobuf.FieldDescriptorProto.default_value)
 }
 inline std::string* FieldDescriptorProto::mutable_default_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_default_value();
+  auto _s = _internal_mutable_default_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FieldDescriptorProto.default_value)
   return _s;
 }
@@ -13525,6 +13620,11 @@ inline std::string* FieldDescriptorProto::_internal_mutable_default_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000008u;
   return _impl_.default_value_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FieldDescriptorProto::_internal_mutable_default_value_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000008u;
+  return _impl_.default_value_.MutableAccessor( GetArena());
 }
 inline std::string* FieldDescriptorProto::release_default_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -13607,7 +13707,7 @@ inline PROTOBUF_ALWAYS_INLINE void FieldDescriptorProto::set_json_name(Arg_&& ar
   // @@protoc_insertion_point(field_set:google.protobuf.FieldDescriptorProto.json_name)
 }
 inline std::string* FieldDescriptorProto::mutable_json_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_json_name();
+  auto _s = _internal_mutable_json_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FieldDescriptorProto.json_name)
   return _s;
 }
@@ -13624,6 +13724,11 @@ inline std::string* FieldDescriptorProto::_internal_mutable_json_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000010u;
   return _impl_.json_name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FieldDescriptorProto::_internal_mutable_json_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000010u;
+  return _impl_.json_name_.MutableAccessor( GetArena());
 }
 inline std::string* FieldDescriptorProto::release_json_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -13806,7 +13911,7 @@ inline PROTOBUF_ALWAYS_INLINE void OneofDescriptorProto::set_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.OneofDescriptorProto.name)
 }
 inline std::string* OneofDescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.OneofDescriptorProto.name)
   return _s;
 }
@@ -13823,6 +13928,11 @@ inline std::string* OneofDescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor OneofDescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* OneofDescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -14037,7 +14147,7 @@ inline PROTOBUF_ALWAYS_INLINE void EnumDescriptorProto::set_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.EnumDescriptorProto.name)
 }
 inline std::string* EnumDescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.EnumDescriptorProto.name)
   return _s;
 }
@@ -14054,6 +14164,11 @@ inline std::string* EnumDescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor EnumDescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* EnumDescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -14292,7 +14407,7 @@ inline void EnumDescriptorProto::clear_reserved_name() {
 inline std::string* EnumDescriptorProto::add_reserved_name()
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  std::string* _s = _internal_mutable_reserved_name()->Add();
+  auto _s = _internal_mutable_reserved_name()->AddString();
   // @@protoc_insertion_point(field_add_mutable:google.protobuf.EnumDescriptorProto.reserved_name)
   return _s;
 }
@@ -14304,35 +14419,36 @@ inline const std::string& EnumDescriptorProto::reserved_name(int index) const
 inline std::string* EnumDescriptorProto::mutable_reserved_name(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   // @@protoc_insertion_point(field_mutable:google.protobuf.EnumDescriptorProto.reserved_name)
-  return _internal_mutable_reserved_name()->Mutable(index);
+  return _internal_mutable_reserved_name()->MutableString(index);
 }
 inline void EnumDescriptorProto::set_reserved_name(int index, const std::string& value) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(value);
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::set_reserved_name(int index, std::string&& value) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(std::move(value));
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(
+      std::move(value));
   // @@protoc_insertion_point(field_set:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::set_reserved_name(int index, const char* value) {
   ABSL_DCHECK(value != nullptr);
-  _internal_mutable_reserved_name()->Mutable(index)->assign(value);
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::set_reserved_name(int index, const char* value,
                               std::size_t size) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_set_pointer:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::set_reserved_name(int index, absl::string_view value) {
-  _internal_mutable_reserved_name()->Mutable(index)->assign(
+  _internal_mutable_reserved_name()->MutableAccessor(index)->assign(
       value.data(), value.size());
   // @@protoc_insertion_point(field_set_string_piece:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::add_reserved_name(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(value);
+  _internal_mutable_reserved_name()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::add_reserved_name(std::string&& value) {
@@ -14343,19 +14459,18 @@ inline void EnumDescriptorProto::add_reserved_name(std::string&& value) {
 inline void EnumDescriptorProto::add_reserved_name(const char* value) {
   ABSL_DCHECK(value != nullptr);
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(value);
+  _internal_mutable_reserved_name()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::add_reserved_name(const char* value, std::size_t size) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(
+  _internal_mutable_reserved_name()->AddAccessor()->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_add_pointer:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline void EnumDescriptorProto::add_reserved_name(absl::string_view value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_reserved_name()->Add()->assign(value.data(),
-                                                     value.size());
+  _internal_mutable_reserved_name()->AddAccessor()->assign(value.data(), value.size());
   // @@protoc_insertion_point(field_add_string_piece:google.protobuf.EnumDescriptorProto.reserved_name)
 }
 inline const ::google::protobuf::RepeatedPtrField<std::string>&
@@ -14408,7 +14523,7 @@ inline PROTOBUF_ALWAYS_INLINE void EnumValueDescriptorProto::set_name(Arg_&& arg
   // @@protoc_insertion_point(field_set:google.protobuf.EnumValueDescriptorProto.name)
 }
 inline std::string* EnumValueDescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.EnumValueDescriptorProto.name)
   return _s;
 }
@@ -14425,6 +14540,11 @@ inline std::string* EnumValueDescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor EnumValueDescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* EnumValueDescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -14607,7 +14727,7 @@ inline PROTOBUF_ALWAYS_INLINE void ServiceDescriptorProto::set_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.ServiceDescriptorProto.name)
 }
 inline std::string* ServiceDescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.ServiceDescriptorProto.name)
   return _s;
 }
@@ -14624,6 +14744,11 @@ inline std::string* ServiceDescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor ServiceDescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* ServiceDescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -14827,7 +14952,7 @@ inline PROTOBUF_ALWAYS_INLINE void MethodDescriptorProto::set_name(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.MethodDescriptorProto.name)
 }
 inline std::string* MethodDescriptorProto::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name();
+  auto _s = _internal_mutable_name();
   // @@protoc_insertion_point(field_mutable:google.protobuf.MethodDescriptorProto.name)
   return _s;
 }
@@ -14844,6 +14969,11 @@ inline std::string* MethodDescriptorProto::_internal_mutable_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor MethodDescriptorProto::_internal_mutable_name_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_.MutableAccessor( GetArena());
 }
 inline std::string* MethodDescriptorProto::release_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -14898,7 +15028,7 @@ inline PROTOBUF_ALWAYS_INLINE void MethodDescriptorProto::set_input_type(Arg_&& 
   // @@protoc_insertion_point(field_set:google.protobuf.MethodDescriptorProto.input_type)
 }
 inline std::string* MethodDescriptorProto::mutable_input_type() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_input_type();
+  auto _s = _internal_mutable_input_type();
   // @@protoc_insertion_point(field_mutable:google.protobuf.MethodDescriptorProto.input_type)
   return _s;
 }
@@ -14915,6 +15045,11 @@ inline std::string* MethodDescriptorProto::_internal_mutable_input_type() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.input_type_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor MethodDescriptorProto::_internal_mutable_input_type_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.input_type_.MutableAccessor( GetArena());
 }
 inline std::string* MethodDescriptorProto::release_input_type() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -14969,7 +15104,7 @@ inline PROTOBUF_ALWAYS_INLINE void MethodDescriptorProto::set_output_type(Arg_&&
   // @@protoc_insertion_point(field_set:google.protobuf.MethodDescriptorProto.output_type)
 }
 inline std::string* MethodDescriptorProto::mutable_output_type() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_output_type();
+  auto _s = _internal_mutable_output_type();
   // @@protoc_insertion_point(field_mutable:google.protobuf.MethodDescriptorProto.output_type)
   return _s;
 }
@@ -14986,6 +15121,11 @@ inline std::string* MethodDescriptorProto::_internal_mutable_output_type() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000004u;
   return _impl_.output_type_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor MethodDescriptorProto::_internal_mutable_output_type_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  return _impl_.output_type_.MutableAccessor( GetArena());
 }
 inline std::string* MethodDescriptorProto::release_output_type() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15196,7 +15336,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_java_package(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.java_package)
 }
 inline std::string* FileOptions::mutable_java_package() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_java_package();
+  auto _s = _internal_mutable_java_package();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.java_package)
   return _s;
 }
@@ -15213,6 +15353,11 @@ inline std::string* FileOptions::_internal_mutable_java_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.java_package_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_java_package_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.java_package_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_java_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15267,7 +15412,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_java_outer_classname(Arg_&& 
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.java_outer_classname)
 }
 inline std::string* FileOptions::mutable_java_outer_classname() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_java_outer_classname();
+  auto _s = _internal_mutable_java_outer_classname();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.java_outer_classname)
   return _s;
 }
@@ -15284,6 +15429,11 @@ inline std::string* FileOptions::_internal_mutable_java_outer_classname() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.java_outer_classname_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_java_outer_classname_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.java_outer_classname_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_java_outer_classname() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15400,13 +15550,13 @@ inline void FileOptions::_internal_set_java_string_check_utf8(bool value) {
 
 // optional .google.protobuf.FileOptions.OptimizeMode optimize_for = 9 [default = SPEED];
 inline bool FileOptions::has_optimize_for() const {
-  bool value = (_impl_._has_bits_[0] & 0x00040000u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00080000u) != 0;
   return value;
 }
 inline void FileOptions::clear_optimize_for() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.optimize_for_ = 1;
-  _impl_._has_bits_[0] &= ~0x00040000u;
+  _impl_._has_bits_[0] &= ~0x00080000u;
 }
 inline ::google::protobuf::FileOptions_OptimizeMode FileOptions::optimize_for() const {
   // @@protoc_insertion_point(field_get:google.protobuf.FileOptions.optimize_for)
@@ -15414,7 +15564,7 @@ inline ::google::protobuf::FileOptions_OptimizeMode FileOptions::optimize_for() 
 }
 inline void FileOptions::set_optimize_for(::google::protobuf::FileOptions_OptimizeMode value) {
   _internal_set_optimize_for(value);
-  _impl_._has_bits_[0] |= 0x00040000u;
+  _impl_._has_bits_[0] |= 0x00080000u;
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.optimize_for)
 }
 inline ::google::protobuf::FileOptions_OptimizeMode FileOptions::_internal_optimize_for() const {
@@ -15451,7 +15601,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_go_package(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.go_package)
 }
 inline std::string* FileOptions::mutable_go_package() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_go_package();
+  auto _s = _internal_mutable_go_package();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.go_package)
   return _s;
 }
@@ -15468,6 +15618,11 @@ inline std::string* FileOptions::_internal_mutable_go_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000004u;
   return _impl_.go_package_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_go_package_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  return _impl_.go_package_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_go_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15612,13 +15767,13 @@ inline void FileOptions::_internal_set_deprecated(bool value) {
 
 // optional bool cc_enable_arenas = 31 [default = true];
 inline bool FileOptions::has_cc_enable_arenas() const {
-  bool value = (_impl_._has_bits_[0] & 0x00080000u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00100000u) != 0;
   return value;
 }
 inline void FileOptions::clear_cc_enable_arenas() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.cc_enable_arenas_ = true;
-  _impl_._has_bits_[0] &= ~0x00080000u;
+  _impl_._has_bits_[0] &= ~0x00100000u;
 }
 inline bool FileOptions::cc_enable_arenas() const {
   // @@protoc_insertion_point(field_get:google.protobuf.FileOptions.cc_enable_arenas)
@@ -15626,7 +15781,7 @@ inline bool FileOptions::cc_enable_arenas() const {
 }
 inline void FileOptions::set_cc_enable_arenas(bool value) {
   _internal_set_cc_enable_arenas(value);
-  _impl_._has_bits_[0] |= 0x00080000u;
+  _impl_._has_bits_[0] |= 0x00100000u;
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.cc_enable_arenas)
 }
 inline bool FileOptions::_internal_cc_enable_arenas() const {
@@ -15636,6 +15791,34 @@ inline bool FileOptions::_internal_cc_enable_arenas() const {
 inline void FileOptions::_internal_set_cc_enable_arenas(bool value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.cc_enable_arenas_ = value;
+}
+
+// optional bool cc_mutable_donated_string = 32 [default = false];
+inline bool FileOptions::has_cc_mutable_donated_string() const {
+  bool value = (_impl_._has_bits_[0] & 0x00040000u) != 0;
+  return value;
+}
+inline void FileOptions::clear_cc_mutable_donated_string() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.cc_mutable_donated_string_ = false;
+  _impl_._has_bits_[0] &= ~0x00040000u;
+}
+inline bool FileOptions::cc_mutable_donated_string() const {
+  // @@protoc_insertion_point(field_get:google.protobuf.FileOptions.cc_mutable_donated_string)
+  return _internal_cc_mutable_donated_string();
+}
+inline void FileOptions::set_cc_mutable_donated_string(bool value) {
+  _internal_set_cc_mutable_donated_string(value);
+  _impl_._has_bits_[0] |= 0x00040000u;
+  // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.cc_mutable_donated_string)
+}
+inline bool FileOptions::_internal_cc_mutable_donated_string() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.cc_mutable_donated_string_;
+}
+inline void FileOptions::_internal_set_cc_mutable_donated_string(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.cc_mutable_donated_string_ = value;
 }
 
 // optional string objc_class_prefix = 36;
@@ -15662,7 +15845,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_objc_class_prefix(Arg_&& arg
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.objc_class_prefix)
 }
 inline std::string* FileOptions::mutable_objc_class_prefix() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_objc_class_prefix();
+  auto _s = _internal_mutable_objc_class_prefix();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.objc_class_prefix)
   return _s;
 }
@@ -15679,6 +15862,11 @@ inline std::string* FileOptions::_internal_mutable_objc_class_prefix() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000008u;
   return _impl_.objc_class_prefix_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_objc_class_prefix_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000008u;
+  return _impl_.objc_class_prefix_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_objc_class_prefix() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15733,7 +15921,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_csharp_namespace(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.csharp_namespace)
 }
 inline std::string* FileOptions::mutable_csharp_namespace() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_csharp_namespace();
+  auto _s = _internal_mutable_csharp_namespace();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.csharp_namespace)
   return _s;
 }
@@ -15750,6 +15938,11 @@ inline std::string* FileOptions::_internal_mutable_csharp_namespace() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000010u;
   return _impl_.csharp_namespace_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_csharp_namespace_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000010u;
+  return _impl_.csharp_namespace_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_csharp_namespace() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15804,7 +15997,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_swift_prefix(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.swift_prefix)
 }
 inline std::string* FileOptions::mutable_swift_prefix() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_swift_prefix();
+  auto _s = _internal_mutable_swift_prefix();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.swift_prefix)
   return _s;
 }
@@ -15821,6 +16014,11 @@ inline std::string* FileOptions::_internal_mutable_swift_prefix() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000020u;
   return _impl_.swift_prefix_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_swift_prefix_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000020u;
+  return _impl_.swift_prefix_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_swift_prefix() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15875,7 +16073,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_php_class_prefix(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.php_class_prefix)
 }
 inline std::string* FileOptions::mutable_php_class_prefix() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_php_class_prefix();
+  auto _s = _internal_mutable_php_class_prefix();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.php_class_prefix)
   return _s;
 }
@@ -15892,6 +16090,11 @@ inline std::string* FileOptions::_internal_mutable_php_class_prefix() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000040u;
   return _impl_.php_class_prefix_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_php_class_prefix_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000040u;
+  return _impl_.php_class_prefix_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_php_class_prefix() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -15946,7 +16149,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_php_namespace(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.php_namespace)
 }
 inline std::string* FileOptions::mutable_php_namespace() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_php_namespace();
+  auto _s = _internal_mutable_php_namespace();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.php_namespace)
   return _s;
 }
@@ -15963,6 +16166,11 @@ inline std::string* FileOptions::_internal_mutable_php_namespace() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000080u;
   return _impl_.php_namespace_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_php_namespace_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000080u;
+  return _impl_.php_namespace_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_php_namespace() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -16017,7 +16225,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_php_metadata_namespace(Arg_&
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.php_metadata_namespace)
 }
 inline std::string* FileOptions::mutable_php_metadata_namespace() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_php_metadata_namespace();
+  auto _s = _internal_mutable_php_metadata_namespace();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.php_metadata_namespace)
   return _s;
 }
@@ -16034,6 +16242,11 @@ inline std::string* FileOptions::_internal_mutable_php_metadata_namespace() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000100u;
   return _impl_.php_metadata_namespace_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_php_metadata_namespace_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000100u;
+  return _impl_.php_metadata_namespace_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_php_metadata_namespace() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -16088,7 +16301,7 @@ inline PROTOBUF_ALWAYS_INLINE void FileOptions::set_ruby_package(Arg_&& arg,
   // @@protoc_insertion_point(field_set:google.protobuf.FileOptions.ruby_package)
 }
 inline std::string* FileOptions::mutable_ruby_package() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_ruby_package();
+  auto _s = _internal_mutable_ruby_package();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FileOptions.ruby_package)
   return _s;
 }
@@ -16105,6 +16318,11 @@ inline std::string* FileOptions::_internal_mutable_ruby_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000200u;
   return _impl_.ruby_package_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FileOptions::_internal_mutable_ruby_package_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000200u;
+  return _impl_.ruby_package_.MutableAccessor( GetArena());
 }
 inline std::string* FileOptions::release_ruby_package() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -16626,7 +16844,7 @@ inline PROTOBUF_ALWAYS_INLINE void FieldOptions_EditionDefault::set_value(Arg_&&
   // @@protoc_insertion_point(field_set:google.protobuf.FieldOptions.EditionDefault.value)
 }
 inline std::string* FieldOptions_EditionDefault::mutable_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_value();
+  auto _s = _internal_mutable_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FieldOptions.EditionDefault.value)
   return _s;
 }
@@ -16643,6 +16861,11 @@ inline std::string* FieldOptions_EditionDefault::_internal_mutable_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.value_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FieldOptions_EditionDefault::_internal_mutable_value_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.value_.MutableAccessor( GetArena());
 }
 inline std::string* FieldOptions_EditionDefault::release_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -16759,7 +16982,7 @@ inline PROTOBUF_ALWAYS_INLINE void FieldOptions_FeatureSupport::set_deprecation_
   // @@protoc_insertion_point(field_set:google.protobuf.FieldOptions.FeatureSupport.deprecation_warning)
 }
 inline std::string* FieldOptions_FeatureSupport::mutable_deprecation_warning() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_deprecation_warning();
+  auto _s = _internal_mutable_deprecation_warning();
   // @@protoc_insertion_point(field_mutable:google.protobuf.FieldOptions.FeatureSupport.deprecation_warning)
   return _s;
 }
@@ -16776,6 +16999,11 @@ inline std::string* FieldOptions_FeatureSupport::_internal_mutable_deprecation_w
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.deprecation_warning_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor FieldOptions_FeatureSupport::_internal_mutable_deprecation_warning_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.deprecation_warning_.MutableAccessor( GetArena());
 }
 inline std::string* FieldOptions_FeatureSupport::release_deprecation_warning() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -18525,7 +18753,7 @@ inline PROTOBUF_ALWAYS_INLINE void UninterpretedOption_NamePart::set_name_part(A
   // @@protoc_insertion_point(field_set:google.protobuf.UninterpretedOption.NamePart.name_part)
 }
 inline std::string* UninterpretedOption_NamePart::mutable_name_part() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_name_part();
+  auto _s = _internal_mutable_name_part();
   // @@protoc_insertion_point(field_mutable:google.protobuf.UninterpretedOption.NamePart.name_part)
   return _s;
 }
@@ -18542,6 +18770,11 @@ inline std::string* UninterpretedOption_NamePart::_internal_mutable_name_part() 
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.name_part_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor UninterpretedOption_NamePart::_internal_mutable_name_part_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.name_part_.MutableAccessor( GetArena());
 }
 inline std::string* UninterpretedOption_NamePart::release_name_part() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -18677,7 +18910,7 @@ inline PROTOBUF_ALWAYS_INLINE void UninterpretedOption::set_identifier_value(Arg
   // @@protoc_insertion_point(field_set:google.protobuf.UninterpretedOption.identifier_value)
 }
 inline std::string* UninterpretedOption::mutable_identifier_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_identifier_value();
+  auto _s = _internal_mutable_identifier_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.UninterpretedOption.identifier_value)
   return _s;
 }
@@ -18694,6 +18927,11 @@ inline std::string* UninterpretedOption::_internal_mutable_identifier_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.identifier_value_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor UninterpretedOption::_internal_mutable_identifier_value_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.identifier_value_.MutableAccessor( GetArena());
 }
 inline std::string* UninterpretedOption::release_identifier_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -18832,7 +19070,7 @@ inline PROTOBUF_ALWAYS_INLINE void UninterpretedOption::set_string_value(Arg_&& 
   // @@protoc_insertion_point(field_set:google.protobuf.UninterpretedOption.string_value)
 }
 inline std::string* UninterpretedOption::mutable_string_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_string_value();
+  auto _s = _internal_mutable_string_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.UninterpretedOption.string_value)
   return _s;
 }
@@ -18849,6 +19087,11 @@ inline std::string* UninterpretedOption::_internal_mutable_string_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.string_value_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor UninterpretedOption::_internal_mutable_string_value_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.string_value_.MutableAccessor( GetArena());
 }
 inline std::string* UninterpretedOption::release_string_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -18903,7 +19146,7 @@ inline PROTOBUF_ALWAYS_INLINE void UninterpretedOption::set_aggregate_value(Arg_
   // @@protoc_insertion_point(field_set:google.protobuf.UninterpretedOption.aggregate_value)
 }
 inline std::string* UninterpretedOption::mutable_aggregate_value() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_aggregate_value();
+  auto _s = _internal_mutable_aggregate_value();
   // @@protoc_insertion_point(field_mutable:google.protobuf.UninterpretedOption.aggregate_value)
   return _s;
 }
@@ -18920,6 +19163,11 @@ inline std::string* UninterpretedOption::_internal_mutable_aggregate_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000004u;
   return _impl_.aggregate_value_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor UninterpretedOption::_internal_mutable_aggregate_value_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  return _impl_.aggregate_value_.MutableAccessor( GetArena());
 }
 inline std::string* UninterpretedOption::release_aggregate_value() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -19582,7 +19830,7 @@ inline PROTOBUF_ALWAYS_INLINE void SourceCodeInfo_Location::set_leading_comments
   // @@protoc_insertion_point(field_set:google.protobuf.SourceCodeInfo.Location.leading_comments)
 }
 inline std::string* SourceCodeInfo_Location::mutable_leading_comments() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_leading_comments();
+  auto _s = _internal_mutable_leading_comments();
   // @@protoc_insertion_point(field_mutable:google.protobuf.SourceCodeInfo.Location.leading_comments)
   return _s;
 }
@@ -19599,6 +19847,11 @@ inline std::string* SourceCodeInfo_Location::_internal_mutable_leading_comments(
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.leading_comments_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor SourceCodeInfo_Location::_internal_mutable_leading_comments_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.leading_comments_.MutableAccessor( GetArena());
 }
 inline std::string* SourceCodeInfo_Location::release_leading_comments() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -19653,7 +19906,7 @@ inline PROTOBUF_ALWAYS_INLINE void SourceCodeInfo_Location::set_trailing_comment
   // @@protoc_insertion_point(field_set:google.protobuf.SourceCodeInfo.Location.trailing_comments)
 }
 inline std::string* SourceCodeInfo_Location::mutable_trailing_comments() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_trailing_comments();
+  auto _s = _internal_mutable_trailing_comments();
   // @@protoc_insertion_point(field_mutable:google.protobuf.SourceCodeInfo.Location.trailing_comments)
   return _s;
 }
@@ -19670,6 +19923,11 @@ inline std::string* SourceCodeInfo_Location::_internal_mutable_trailing_comments
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.trailing_comments_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor SourceCodeInfo_Location::_internal_mutable_trailing_comments_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.trailing_comments_.MutableAccessor( GetArena());
 }
 inline std::string* SourceCodeInfo_Location::release_trailing_comments() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -19714,7 +19972,7 @@ inline void SourceCodeInfo_Location::clear_leading_detached_comments() {
 inline std::string* SourceCodeInfo_Location::add_leading_detached_comments()
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  std::string* _s = _internal_mutable_leading_detached_comments()->Add();
+  auto _s = _internal_mutable_leading_detached_comments()->AddString();
   // @@protoc_insertion_point(field_add_mutable:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
   return _s;
 }
@@ -19726,35 +19984,36 @@ inline const std::string& SourceCodeInfo_Location::leading_detached_comments(int
 inline std::string* SourceCodeInfo_Location::mutable_leading_detached_comments(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   // @@protoc_insertion_point(field_mutable:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
-  return _internal_mutable_leading_detached_comments()->Mutable(index);
+  return _internal_mutable_leading_detached_comments()->MutableString(index);
 }
 inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, const std::string& value) {
-  _internal_mutable_leading_detached_comments()->Mutable(index)->assign(value);
+  _internal_mutable_leading_detached_comments()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, std::string&& value) {
-  _internal_mutable_leading_detached_comments()->Mutable(index)->assign(std::move(value));
+  _internal_mutable_leading_detached_comments()->MutableAccessor(index)->assign(
+      std::move(value));
   // @@protoc_insertion_point(field_set:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, const char* value) {
   ABSL_DCHECK(value != nullptr);
-  _internal_mutable_leading_detached_comments()->Mutable(index)->assign(value);
+  _internal_mutable_leading_detached_comments()->MutableAccessor(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, const char* value,
                               std::size_t size) {
-  _internal_mutable_leading_detached_comments()->Mutable(index)->assign(
+  _internal_mutable_leading_detached_comments()->MutableAccessor(index)->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_set_pointer:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::set_leading_detached_comments(int index, absl::string_view value) {
-  _internal_mutable_leading_detached_comments()->Mutable(index)->assign(
+  _internal_mutable_leading_detached_comments()->MutableAccessor(index)->assign(
       value.data(), value.size());
   // @@protoc_insertion_point(field_set_string_piece:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::add_leading_detached_comments(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_leading_detached_comments()->Add()->assign(value);
+  _internal_mutable_leading_detached_comments()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::add_leading_detached_comments(std::string&& value) {
@@ -19765,19 +20024,18 @@ inline void SourceCodeInfo_Location::add_leading_detached_comments(std::string&&
 inline void SourceCodeInfo_Location::add_leading_detached_comments(const char* value) {
   ABSL_DCHECK(value != nullptr);
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_leading_detached_comments()->Add()->assign(value);
+  _internal_mutable_leading_detached_comments()->AddAccessor()->assign(value);
   // @@protoc_insertion_point(field_add_char:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::add_leading_detached_comments(const char* value, std::size_t size) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_leading_detached_comments()->Add()->assign(
+  _internal_mutable_leading_detached_comments()->AddAccessor()->assign(
       reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_add_pointer:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline void SourceCodeInfo_Location::add_leading_detached_comments(absl::string_view value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _internal_mutable_leading_detached_comments()->Add()->assign(value.data(),
-                                                     value.size());
+  _internal_mutable_leading_detached_comments()->AddAccessor()->assign(value.data(), value.size());
   // @@protoc_insertion_point(field_add_string_piece:google.protobuf.SourceCodeInfo.Location.leading_detached_comments)
 }
 inline const ::google::protobuf::RepeatedPtrField<std::string>&
@@ -19928,7 +20186,7 @@ inline PROTOBUF_ALWAYS_INLINE void GeneratedCodeInfo_Annotation::set_source_file
   // @@protoc_insertion_point(field_set:google.protobuf.GeneratedCodeInfo.Annotation.source_file)
 }
 inline std::string* GeneratedCodeInfo_Annotation::mutable_source_file() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_source_file();
+  auto _s = _internal_mutable_source_file();
   // @@protoc_insertion_point(field_mutable:google.protobuf.GeneratedCodeInfo.Annotation.source_file)
   return _s;
 }
@@ -19945,6 +20203,11 @@ inline std::string* GeneratedCodeInfo_Annotation::_internal_mutable_source_file(
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_._has_bits_[0] |= 0x00000001u;
   return _impl_.source_file_.Mutable( GetArena());
+}
+inline ::google::protobuf::MaybeArenaStringAccessor GeneratedCodeInfo_Annotation::_internal_mutable_source_file_accessor() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.source_file_.MutableAccessor( GetArena());
 }
 inline std::string* GeneratedCodeInfo_Annotation::release_source_file() {
   ::google::protobuf::internal::TSanWrite(&_impl_);

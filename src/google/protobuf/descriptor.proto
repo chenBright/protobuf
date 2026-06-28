@@ -506,6 +506,11 @@ message FileOptions {
   // only to generated classes for C++.
   optional bool cc_enable_arenas = 31 [default = true];
 
+  // Change mutable_xxx function to support mutation on arena
+  // false: default. copy arenastring to heap and return std::string*
+  // true: return MaybeArenaStringAccessor to support mutation on arena
+  optional bool cc_mutable_donated_string = 32 [default = false];
+
   // Sets the objective c class prefix which is prepended to all objective c
   // generated classes from this .proto. There is no default.
   optional string objc_class_prefix = 36;

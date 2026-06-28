@@ -21,7 +21,13 @@ COPTS = select({
         "-Woverloaded-virtual",
         "-Wno-sign-compare",
         "-Wno-nonnull",
-        "-Werror",
+        # ARENASTRING PATCH: ignore more warning with -Werror
+        "-Wno-array-bounds",
+        "-Wno-dangling-else",
+        "-Wno-deprecated-declarations",
+        "-Wno-maybe-uninitialized",
+        # ARENASTRING PATCH: more save to disable -Werror when using as a dependency
+        #"-Werror",
     ],
 })
 

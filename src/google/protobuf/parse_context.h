@@ -198,9 +198,12 @@ class PROTOBUF_EXPORT EpsCopyInputStream {
     return AppendStringFallback(ptr, size, s);
   }
   // Implemented in arenastring.cc
+  PROTOBUF_NODISCARD const char* ReadArenaString(const char* ptr, int size,
+                                                 ArenaStringAccessor s);
   PROTOBUF_NODISCARD const char* ReadArenaString(const char* ptr,
-                                                 ArenaStringPtr* s,
-                                                 Arena* arena);
+                                                 ArenaStringAccessor s);
+  PROTOBUF_NODISCARD const char* ReadArenaString(const char* ptr,
+                                                 MaybeArenaStringAccessor s);
 
   PROTOBUF_NODISCARD const char* ReadCord(const char* ptr, int size,
                                           ::absl::Cord* cord) {
@@ -1266,7 +1269,6 @@ PROTOBUF_NODISCARD inline const char* InlineCordParser(::absl::Cord* cord,
   if (!ptr) return nullptr;
   return ctx->ReadCord(ptr, size, cord);
 }
-
 
 template <typename T>
 PROTOBUF_NODISCARD const char* FieldParser(uint64_t tag, T& field_parser,

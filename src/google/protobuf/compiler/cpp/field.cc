@@ -370,7 +370,7 @@ void InlinedStringVars(const FieldDescriptor* field, const Options& opts,
                                 : "_impl_._inlined_string_donated_";
 
   vars.emplace_back("inlined_string_donated",
-                    absl::StrFormat("(%s[%d] & %s) != 0;", array, index, mask));
+                    absl::StrFormat("(%s[%d] & %s) != 0", array, index, mask));
   vars.emplace_back("donating_states_word",
                     absl::StrFormat("%s[%d]", array, index));
   vars.emplace_back("mask_for_undonate", absl::StrFormat("~%s", mask));

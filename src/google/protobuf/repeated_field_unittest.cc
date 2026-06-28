@@ -1607,7 +1607,7 @@ TEST(RepeatedPtrField, SwapLargeLarge) {
 }
 
 static int ReservedSpace(RepeatedPtrField<std::string>* field) {
-  const std::string* const* ptr = field->data();
+  auto ptr = field->data();
   do {
     field->Add();
   } while (field->data() == ptr);
@@ -1636,7 +1636,7 @@ TEST(RepeatedPtrField, ReserveLessThanDouble) {
 TEST(RepeatedPtrField, ReserveLessThanExisting) {
   RepeatedPtrField<std::string> field;
   field.Reserve(20);
-  const std::string* const* previous_ptr = field.data();
+  auto previous_ptr = field.data();
   field.Reserve(10);
 
   EXPECT_EQ(previous_ptr, field.data());
@@ -1648,11 +1648,11 @@ TEST(RepeatedPtrField, ReserveDoesntLoseAllocated) {
   // failed to copy pointers to allocated-but-cleared objects, possibly
   // leading to segfaults.
   RepeatedPtrField<std::string> field;
-  std::string* first = field.Add();
+  std::string* first = field.AddString();
   field.RemoveLast();
 
   field.Reserve(20);
-  EXPECT_EQ(first, field.Add());
+  EXPECT_EQ(first, field.AddString());
 }
 
 // Clearing elements is tricky with RepeatedPtrFields since the memory for
@@ -1661,7 +1661,7 @@ TEST(RepeatedPtrField, ClearedElements) {
   PROTOBUF_IGNORE_DEPRECATION_START
   RepeatedPtrField<std::string> field;
 
-  std::string* original = field.Add();
+  std::string* original = field.AddString();
   *original = "foo";
 
   EXPECT_EQ(field.ClearedCount(), 0);
@@ -1670,17 +1670,19 @@ TEST(RepeatedPtrField, ClearedElements) {
   EXPECT_TRUE(original->empty());
   EXPECT_EQ(field.ClearedCount(), 1);
 
-  EXPECT_EQ(field.Add(),
+  EXPECT_EQ(field.AddString(),
             original);  // Should return same string for reuse.
-  EXPECT_EQ(field.UnsafeArenaReleaseLast(), original);  // We take ownership.
+  EXPECT_EQ(field.UnsafeArenaReleaseLast()->ToStringPtr(),
+            original);  // We take ownership.
   EXPECT_EQ(field.ClearedCount(), 0);
 
-  EXPECT_NE(field.Add(), original);  // Should NOT return the same string.
+  EXPECT_NE(field.AddString(), original);  // Should NOT return the same string.
   EXPECT_EQ(field.ClearedCount(), 0);
 
-  field.UnsafeArenaAddAllocated(original);  // Give ownership back.
+  field.UnsafeArenaAddAllocated(internal::StringHandlerType::ToUnTagged(
+      original));  // Give ownership back.
   EXPECT_EQ(field.ClearedCount(), 0);
-  EXPECT_EQ(field.Mutable(1), original);
+  EXPECT_EQ(field.MutableString(1), original);
 
   field.Clear();
   EXPECT_EQ(field.ClearedCount(), 2);
@@ -1774,7 +1776,6 @@ TEST(RepeatedPtrField, MergeFrom) {
   EXPECT_EQ("4", destination.Get(3));
   EXPECT_EQ("5", destination.Get(4));
 }
-
 
 TEST(RepeatedPtrField, CopyFrom) {
   RepeatedPtrField<std::string> source, destination;
@@ -1912,13 +1913,17 @@ TEST(RepeatedPtrField, SmallOptimization) {
   // We use UnsafeArenaAddAllocated just to grow the array without creating
   // objects or causing extra cleanup costs in the arena to make the
   // measurements simpler.
-  array->UnsafeArenaAddAllocated(&str);
+  array->UnsafeArenaAddAllocated(internal::StringHandlerType::ToUnTagged(&str));
   // No backing array, just the string.
   EXPECT_EQ(array->SpaceUsedExcludingSelf(), sizeof(str));
   // We have not used any arena space.
   EXPECT_EQ(usage_before, arena.SpaceUsed());
   // Verify the string is where we think it is.
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  EXPECT_EQ(array->begin()->underlying(), &str);
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   EXPECT_EQ(&*array->begin(), &str);
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   EXPECT_EQ(array->pointer_begin()[0], &str);
   auto is_inlined = [array]() {
     return std::less_equal<void*>{}(array, &*array->pointer_begin()) &&
@@ -1929,7 +1934,8 @@ TEST(RepeatedPtrField, SmallOptimization) {
 
   // Adding a second object stops sso.
   std::string str2;
-  array->UnsafeArenaAddAllocated(&str2);
+  array->UnsafeArenaAddAllocated(
+      internal::StringHandlerType::ToUnTagged(&str2));
   EXPECT_EQ(array->Capacity(), 3);
   // Backing array and the strings.
   EXPECT_EQ(array->SpaceUsedExcludingSelf(),
@@ -1974,7 +1980,7 @@ TEST(RepeatedPtrField, MoveConstruct) {
     RepeatedPtrField<std::string> source;
     *source.Add() = "1";
     *source.Add() = "2";
-    const std::string* const* data = source.data();
+    auto data = source.data();
     RepeatedPtrField<std::string> destination = std::move(source);
     EXPECT_EQ(data, destination.data());
     EXPECT_THAT(destination, ElementsAre("1", "2"));
@@ -2004,7 +2010,7 @@ TEST(RepeatedPtrField, MoveAssign) {
     *source.Add() = "2";
     RepeatedPtrField<std::string> destination;
     *destination.Add() = "3";
-    const std::string* const* source_data = source.data();
+    auto source_data = source.data();
     destination = std::move(source);
     EXPECT_EQ(source_data, destination.data());
     EXPECT_THAT(destination, ElementsAre("1", "2"));
@@ -2019,7 +2025,7 @@ TEST(RepeatedPtrField, MoveAssign) {
     RepeatedPtrField<std::string>* destination =
         Arena::Create<RepeatedPtrField<std::string>>(&arena);
     *destination->Add() = "3";
-    const std::string* const* source_data = source->data();
+    auto source_data = source->data();
     *destination = std::move(*source);
     EXPECT_EQ(source_data, destination->data());
     EXPECT_THAT(*destination, ElementsAre("1", "2"));
@@ -2075,7 +2081,7 @@ TEST(RepeatedPtrField, MoveAssign) {
     RepeatedPtrField<std::string>& alias = field;
     *field.Add() = "1";
     *field.Add() = "2";
-    const std::string* const* data = field.data();
+    auto data = field.data();
     field = std::move(alias);
     EXPECT_EQ(data, field.data());
     EXPECT_THAT(field, ElementsAre("1", "2"));
@@ -2086,7 +2092,7 @@ TEST(RepeatedPtrField, MoveAssign) {
         Arena::Create<RepeatedPtrField<std::string>>(&arena);
     *field->Add() = "1";
     *field->Add() = "2";
-    const std::string* const* data = field->data();
+    auto data = field->data();
     *field = std::move(*field);
     EXPECT_EQ(data, field->data());
     EXPECT_THAT(*field, ElementsAre("1", "2"));
@@ -2099,8 +2105,8 @@ TEST(RepeatedPtrField, MutableDataIsMutable) {
   EXPECT_EQ("1", field.Get(0));
   // The fact that this line compiles would be enough, but we'll check the
   // value anyway.
-  std::string** data = field.mutable_data();
-  **data = "2";
+  auto data = field.mutable_data();
+  *(*data)->UnTaggedToStringPtr() = "2";
   EXPECT_EQ("2", field.Get(0));
 }
 
@@ -2109,9 +2115,13 @@ TEST(RepeatedPtrField, SubscriptOperators) {
   *field.Add() = "1";
   EXPECT_EQ("1", field.Get(0));
   EXPECT_EQ("1", field[0]);
+#if GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
+  EXPECT_EQ(field.MutableString(0), field[0]->underlying());
+#else   // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   EXPECT_EQ(field.Mutable(0), &field[0]);
+#endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
   const RepeatedPtrField<std::string>& const_field = field;
-  EXPECT_EQ(*field.data(), &const_field[0]);
+  EXPECT_EQ((*field.data())->ToStringPtr(), &const_field[0]);
 }
 
 TEST(RepeatedPtrField, ExtractSubrange) {
@@ -2151,9 +2161,9 @@ TEST(RepeatedPtrField, ExtractSubrange) {
 
           // Does the resulting array contain the right values?
           for (int i = 0; i < start; ++i)
-            EXPECT_EQ(field.Mutable(i), subject[i]);
+            EXPECT_EQ(field.MutableString(i), subject[i]);
           for (int i = start; i < field.size(); ++i)
-            EXPECT_EQ(field.Mutable(i), subject[i + num]);
+            EXPECT_EQ(field.MutableString(i), subject[i + num]);
 
           // Reinstate the cleared elements.
           EXPECT_EQ(field.ClearedCount(), extra);
@@ -2165,7 +2175,7 @@ TEST(RepeatedPtrField, ExtractSubrange) {
           for (int i = sz; i < sz + extra; ++i) {
             int count = 0;
             for (int j = sz; j < sz + extra; ++j) {
-              if (field.Mutable(j - num) == subject[i]) count += 1;
+              if (field.MutableString(j - num) == subject[i]) count += 1;
             }
             EXPECT_EQ(count, 1);
           }
@@ -2776,8 +2786,8 @@ TEST_F(RepeatedFieldInsertionIteratorsTest,
     *new_data = absl::StrCat("name-", i);
     data.push_back(new_data);
 
-    new_data = goldenproto.add_repeated_string();
-    *new_data = absl::StrCat("name-", i);
+    auto new_data2 = goldenproto.add_repeated_string();
+    *new_data2 = absl::StrCat("name-", i);
   }
   TestAllTypes testproto;
   std::copy(data.begin(), data.end(),
@@ -2805,13 +2815,13 @@ TEST_F(RepeatedFieldInsertionIteratorsTest,
 
 TEST_F(RepeatedFieldInsertionIteratorsTest,
        UnsafeArenaAllocatedRepeatedPtrFieldWithString) {
-  std::vector<std::string*> data;
+  std::vector<internal::StringHandlerType*> data;
   Arena arena;
   auto* goldenproto = Arena::Create<TestAllTypes>(&arena);
   for (int i = 0; i < 10; ++i) {
-    auto* new_data = goldenproto->add_repeated_string();
+    auto new_data = goldenproto->add_repeated_string();
     *new_data = absl::StrCat("name-", i);
-    data.push_back(new_data);
+    data.push_back(internal::StringHandlerType::ToUnTagged(new_data));
   }
   auto* testproto = Arena::Create<TestAllTypes>(&arena);
   std::copy(data.begin(), data.end(),

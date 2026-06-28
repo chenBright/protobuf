@@ -525,6 +525,12 @@ bool MessageLite::AppendToString(std::string* output) const {
   return AppendPartialToString(output);
 }
 
+bool MessageLite::AppendToString(MaybeArenaStringAccessor output) const {
+  ABSL_DCHECK(IsInitialized())
+      << InitializationErrorMessage("serialize", *this);
+  return AppendPartialToString(output);
+}
+
 bool MessageLite::AppendPartialToString(std::string* output) const {
   size_t old_size = output->size();
   size_t byte_size = ByteSizeLong();
@@ -542,7 +548,27 @@ bool MessageLite::AppendPartialToString(std::string* output) const {
   return true;
 }
 
+bool MessageLite::AppendPartialToString(MaybeArenaStringAccessor output) const {
+  size_t old_size = output->size();
+  size_t byte_size = ByteSizeLong();
+  if (byte_size > INT_MAX) {
+    ABSL_LOG(ERROR) << GetTypeName()
+                    << " exceeded maximum protobuf size of 2GB: " << byte_size;
+    return false;
+  }
+
+  output.__resize_default_init(old_size + byte_size);
+  uint8_t* start = reinterpret_cast<uint8_t*>(&output[0] + old_size);
+  SerializeToArrayImpl(*this, start, byte_size);
+  return true;
+}
+
 bool MessageLite::SerializeToString(std::string* output) const {
+  output->clear();
+  return AppendToString(output);
+}
+
+bool MessageLite::SerializeToString(MaybeArenaStringAccessor output) const {
   output->clear();
   return AppendToString(output);
 }

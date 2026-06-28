@@ -166,24 +166,37 @@ memswap<ArenaOffsetHelper<RepeatedPtrFieldBase>::value>(
     char* PROTOBUF_RESTRICT, char* PROTOBUF_RESTRICT);
 
 template <>
-void RepeatedPtrFieldBase::MergeFrom<std::string>(
+void RepeatedPtrFieldBase::MergeFrom<GenericTypeHandler<std::string>::Type>(
     const RepeatedPtrFieldBase& from) {
+  using TypeHandler = GenericTypeHandler<std::string>;
   ABSL_DCHECK_NE(&from, this);
   int new_size = current_size_ + from.current_size_;
-  auto dst = reinterpret_cast<std::string**>(InternalReserve(new_size));
-  auto src = reinterpret_cast<std::string* const*>(from.elements());
+  auto dst = reinterpret_cast<TypeHandler::Type**>(InternalReserve(new_size));
+  auto src = reinterpret_cast<TypeHandler::Type* const*>(from.elements());
   auto end = src + from.current_size_;
   auto end_assign = src + std::min(ClearedCount(), from.current_size_);
-  for (; src < end_assign; ++dst, ++src) {
-    (*dst)->assign(**src);
-  }
+
   if (Arena* const arena = arena_) {
+    for (; src < end_assign; ++dst, ++src) {
+      if ((*dst)->IsTagged()) {
+        ArenaStringAccessor(arena, (*dst)->ToStringPtr())
+            .assign(*(*src)->ToStringPtr());
+      } else {
+        (*dst)->UnTaggedToStringPtr()->assign(*(*src)->ToStringPtr());
+      }
+    }
     for (; src < end; ++dst, ++src) {
-      *dst = Arena::Create<std::string>(arena, **src);
+      auto accessor =
+          ArenaStringAccessor::create(arena, *(*src)->ToStringPtr());
+      *dst = StringHandlerType::ToTagged(accessor.underlying());
     }
   } else {
+    for (; src < end_assign; ++dst, ++src) {
+      (*dst)->UnTaggedToStringPtr()->assign(*(*src)->ToStringPtr());
+    }
     for (; src < end; ++dst, ++src) {
-      *dst = new std::string(**src);
+      *dst = StringHandlerType::ToUnTagged(
+          new std::string(*(*src)->ToStringPtr()));
     }
   }
   ExchangeCurrentSize(new_size);
@@ -192,6 +205,17 @@ void RepeatedPtrFieldBase::MergeFrom<std::string>(
   }
 }
 
+template <>
+void RepeatedPtrFieldBase::AddAllocatedSlowWithCopy<
+    GenericTypeHandler<std::string>>(StringHandlerType* value,
+                                     Arena* value_arena, Arena* my_arena) {
+  using TypeHandler = GenericTypeHandler<std::string>;
+  if (my_arena != nullptr) {
+    my_arena->Own(value->UnTaggedToStringPtr());
+  }
+
+  UnsafeArenaAddAllocated<TypeHandler>(value);
+}
 
 int RepeatedPtrFieldBase::MergeIntoClearedMessages(
     const RepeatedPtrFieldBase& from) {
@@ -266,7 +290,7 @@ void RepeatedPtrFieldBase::MergeFrom<MessageLite>(
 }
 
 void* NewStringElement(Arena* arena) {
-  return Arena::Create<std::string>(arena);
+  return GenericTypeHandler<std::string>::New(arena);
 }
 
 }  // namespace internal
