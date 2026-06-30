@@ -1258,6 +1258,23 @@ cc_test(
     ],
 )
 
+# ARENASTRING PATCH v2.1: self-contained Map DonatedString micro-benchmark
+# (§7.2/§7.3). Run with: bazel run -c opt //src/google/protobuf:map_donated_string_benchmark
+cc_binary(
+    name = "map_donated_string_benchmark",
+    testonly = True,
+    srcs = ["map_donated_string_benchmark.cc"],
+    deps = [
+        ":port",
+        ":protobuf",
+        ":protobuf_lite",
+        ":cc_test_protos",
+        "//src/google/protobuf/io",
+        "//src/google/protobuf/stubs",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_test(
     name = "arenaz_sampler_test",
     srcs = ["arenaz_sampler_test.cc"],

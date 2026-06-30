@@ -20,4 +20,6 @@ message ArenaProto3 {
     // bytes onc = 12 [ctype = CORD];
   }
   map<string, string> ms = 13;
+  map<int32, string> mi = 14;   // int32 key, string value (value Donated)
+  map<string, int32> mk = 15;   // string key, int32 value (key Donated)
 };

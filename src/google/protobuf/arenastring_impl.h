@@ -516,6 +516,138 @@ using MutableStringType = ::std::string*;
 using MutableStringReferenceType = ::std::string&;
 #endif  // !GOOGLE_PROTOBUF_MUTABLE_DONATED_STRING
 
+namespace internal {
+
+// ============================================================================
+// Map DonatedString support APIs (v2.1 plan).
+//
+// These APIs are designed to be used by Map<K,V> where K and/or V is
+// std::string, in order to construct/destruct donated std::strings whose
+// character buffer is owned by an Arena.
+//
+// The key invariants enforced by these APIs (per arenastring_map_plan v2.1):
+//   INV-1: Any mutable std::string& exposed to user code must NOT be in
+//          Donated state. Promote it first.
+//   INV-2: A Donated std::string's data() must reside in arena memory.
+//   INV-3: The donated tag stored alongside a node must agree with the
+//          actual state of the std::string.
+//   INV-4: When arena == nullptr, all code paths must fall back to standard
+//          std::string semantics.
+//   INV-5: A Donated std::string's character buffer must NOT be freed by
+//          std::string's destructor. The arena reclaims it.
+// ============================================================================
+
+// Construct a std::string in-place at `placed_ptr` (which the caller already
+// owns the storage for, e.g. a Map node body) and immediately make it a
+// Donated string whose character buffer is owned by `arena`.
+//
+// Pre-conditions:
+//   - `arena != nullptr`
+//   - `placed_ptr` points to sizeof(std::string) bytes of uninitialized memory
+//     suitably aligned for std::string.
+//
+// Post-conditions:
+//   - `*placed_ptr` is a valid empty std::string in Donated state
+//   - The returned ArenaStringAccessor wraps `arena` and `placed_ptr`
+//   - The caller is responsible for setting the donated tag and for NOT
+//     invoking std::string::~basic_string() on `placed_ptr` until the string
+//     has been promoted via `promote_donated_to_heap`.
+PROTOBUF_ALWAYS_INLINE inline ArenaStringAccessor init_donated_in_place(
+    Arena* arena, ::std::string* placed_ptr) noexcept {
+  // Use placement new to construct an empty std::string. The buffer (if any
+  // is later allocated) will be redirected to arena memory via the
+  // ArenaStringAccessor write path; the small-string optimization (SSO)
+  // buffer for an empty string lives inside the std::string object itself
+  // and is harmless (the destructor of an SSO std::string is a no-op for
+  // the buffer).
+  new (placed_ptr)::std::string();
+  return ArenaStringAccessor(arena, placed_ptr);
+}
+
+// Wrap an already-Donated std::string with a MaybeArenaStringAccessor so it
+// can be used by parser / generated code through the accessor API.
+//
+// Pre-conditions:
+//   - `ptr` was previously initialized via `init_donated_in_place(arena, ptr)`
+//     (or is a regular std::string when `arena == nullptr`).
+PROTOBUF_ALWAYS_INLINE inline MaybeArenaStringAccessor wrap_existing_donated(
+    Arena* arena, ::std::string* ptr) noexcept {
+  return MaybeArenaStringAccessor(arena, ptr);
+}
+
+// Promote a Donated std::string in-place into a heap-owned std::string so
+// that all subsequent standard std::string mutating operations (reserve,
+// resize, append, shrink_to_fit, destructor) are safe.
+//
+// Strategy: read the current (donated) data pointer and size first, then
+// placement-new a brand-new std::string over the same storage with
+// ::std::string(data, size). The new ctor copies the bytes from the
+// still-live arena buffer into a fresh self-owned (heap) buffer; the
+// old representation is silently dropped without ~basic_string() ever
+// being invoked on the donated state.
+//
+// Per C++17 the arguments `ptr->data()` and `ptr->size()` are fully
+// evaluated before placement-new constructs the new object, so reading
+// from the old representation is well-defined.
+//
+// Post-conditions (per v2.1):
+//   1. `ptr->data()` is owned by std::string / system heap.
+//   2. The old arena buffer is merely abandoned (the arena will reclaim it).
+//   3. The caller MUST clear the corresponding donated tag immediately.
+//   4. All standard std::string operations are safe afterwards.
+PROTOBUF_ALWAYS_INLINE inline void promote_donated_to_heap(
+    ::std::string* ptr) noexcept {
+  new (ptr)::std::string(ptr->data(), ptr->size());
+}
+
+// Relocate the contents of a (possibly Donated) std::string from `src` (an
+// existing, live std::string) into `dst` (uninitialized storage), choosing
+// the cheapest legal strategy based on arena placement.
+//
+// Strategy matrix:
+//   * dst_arena == nullptr && src_arena == nullptr:
+//       Standard move-construct. dst takes ownership of src's heap buffer,
+//       src becomes valid-but-empty.
+//   * dst_arena == src_arena (both non-null):
+//       Same-arena fast path: the buffer is still valid in the same arena,
+//       so we can shallow-copy std::string representation (placement-new an
+//       empty std::string into dst, then memcpy the std::string state from
+//       src). src is left in a detached state safe to abandon (tag transfer
+//       must follow).
+//       NOTE: We choose the safer copy-and-init strategy (init_donated +
+//       copy from src's view) to avoid having to know the exact ABI byte
+//       layout from this header. This costs one buffer allocation in dst's
+//       arena but keeps the implementation portable and INV-5 safe.
+//   * dst_arena != src_arena (one null, both non-null, or both non-null):
+//       Cross-arena deep copy. Construct dst donated in dst_arena and copy
+//       content over. src is left untouched (caller decides whether/when to
+//       drop it).
+//
+// `dst_is_donated_out` receives true when the resulting `dst` is in Donated
+// state (i.e. the caller must record the tag bit), false when dst became a
+// regular heap-owned std::string.
+PROTOBUF_ALWAYS_INLINE inline void relocate_donated(
+    ::std::string* dst, ::std::string* src, Arena* dst_arena,
+    Arena* src_arena, bool src_is_donated, bool* dst_is_donated_out) {
+  if (dst_arena == nullptr) {
+    // dst lives on system heap.
+    new (dst)::std::string(::std::move(*src));
+    *dst_is_donated_out = false;
+    return;
+  }
+  // dst lives on dst_arena. Construct as donated and copy content.
+  init_donated_in_place(dst_arena, dst);
+  ArenaStringAccessor(dst_arena, dst).assign(src->data(), src->size());
+  *dst_is_donated_out = true;
+  // For the same-arena case, the source's arena buffer is simply abandoned
+  // (still owned by src_arena until it is reset). For cross-arena, src is
+  // left intact so the caller can release it as appropriate.
+  (void)src_arena;
+  (void)src_is_donated;
+}
+
+}  // namespace internal
+
 }  // namespace protobuf
 }  // namespace google
 

@@ -13,7 +13,24 @@ build:asan --dynamic_mode=off
 build:msan --config=san-common --copt=-fsanitize=memory --linkopt=-fsanitize=memory
 build:msan --copt=-fsanitize-memory-track-origins
 build:msan --copt=-fsanitize-memory-use-after-dtor
-build:msan --action_env=MSAN_OPTIONS=poison_in_dtor=1
+# MSan runtime options.
+#   poison_in_dtor=1     -- matches the instrumented libc++ built with
+#                           -fsanitize-memory-use-after-dtor.
+#   fast_unwind_on_fatal=1 -- force MSan to use its built-in frame-pointer
+#                           unwinder when printing a *fatal* report instead of
+#                           calling _Unwind_Backtrace. Our CI builds libunwind
+#                           with MSan instrumentation (LLVM_USE_SANITIZER) and
+#                           installs it system-wide; the slow unwinder would then
+#                           re-enter that instrumented libunwind while already
+#                           inside an error report and recurse, which showed up
+#                           as a stack-overflow (instead of the expected
+#                           "use-of-uninitialized-value") in the RepeatedField
+#                           "PoisonsMemory*" death tests. -fno-omit-frame-pointer
+#                           (from san-common) keeps the fast unwinder usable.
+# Set it for both build actions (--action_env) and test execution (--test_env),
+# since the death tests need it at runtime.
+build:msan --action_env=MSAN_OPTIONS=poison_in_dtor=1:fast_unwind_on_fatal=1
+build:msan --test_env=MSAN_OPTIONS=poison_in_dtor=1:fast_unwind_on_fatal=1
 
 build:tsan --config=san-common --copt=-fsanitize=thread --linkopt=-fsanitize=thread
 
@@ -21,7 +38,12 @@ build:ubsan --config=san-common --copt=-fsanitize=undefined --linkopt=-fsanitize
 build:ubsan --action_env=UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
 # Workaround for the fact that Bazel links with $CC, not $CXX
 # https://github.com/bazelbuild/bazel/issues/11122#issuecomment-613746748
-build:ubsan --copt=-fno-sanitize=function --copt=-fno-sanitize=vptr
+# -fno-sanitize=vptr is supported by both GCC and Clang.
+build:ubsan --copt=-fno-sanitize=vptr
+# -fno-sanitize=function is Clang-only; GCC does not recognize it (and has no
+# function sanitizer to disable). When building UBSan with Clang, combine the
+# configs, e.g. `bazel build --config=ubsan --config=ubsan-clang //...`.
+build:ubsan-clang --copt=-fno-sanitize=function
 
 # TODO: migrate all dependencies from WORKSPACE to MODULE.bazel
 # https://github.com/protocolbuffers/protobuf/issues/14313
@@ -32,3 +54,7 @@ common --noenable_bzlmod
 build --features=layering_check
 
 common --repo_env=BAZEL_NO_APPLE_CPP_TOOLCHAIN=1
+
+# C/C++ 编译错误颜色，适合 GCC / Clang
+build --cxxopt=-fdiagnostics-color=always
+build --host_cxxopt=-fdiagnostics-color=always

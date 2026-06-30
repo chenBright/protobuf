@@ -321,9 +321,9 @@ const char* EpsCopyInputStream::ReadArenaString(const char* ptr, int size,
     return ptr + size;
   }
 
-  return AppendSize(ptr, size, [&](const char* p, int s) {
-    memcpy(buffer, p, s);
-    buffer += s;
+  return AppendSize(ptr, size, [&](const char* p, int size) {
+    memcpy(buffer, p, size);
+    buffer += size;
   });
 }
 

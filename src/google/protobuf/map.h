@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
@@ -37,6 +38,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/arena.h"
+#include "google/protobuf/arenastring_impl.h"
 #include "google/protobuf/generated_enum_util.h"
 #include "google/protobuf/internal_visibility.h"
 #include "google/protobuf/map_type_handler.h"
@@ -297,6 +299,22 @@ struct NodeBase {
   // This way sizeof(NodeBase) contains any possible padding it was going to
   // have between NodeBase and the key.
   alignas(kMaxMessageAlignment) NodeBase* next;
+
+  // ARENASTRING PATCH v2.1: Map DonatedString tag.
+  //   bit 0 = mapped_type std::string is in Donated state
+  //   bit 1 = key_type    std::string is in Donated state
+  // For non-string K/V the byte is ignored.
+  //
+  // The byte lives at offset sizeof(NodeBase*) inside NodeBase. Because of
+  // the surrounding `alignas(kMaxMessageAlignment)`, the byte sits in
+  // pre-existing tail padding of the `next` pointer — sizeof(NodeBase)
+  // stays at one alignment unit, so KeyNode::kOffset (== sizeof(NodeBase))
+  // and the offset of `kv.first` in every Map::Node remain unchanged.
+  //
+  // Zero-initialised by UntypedMapBase::AllocNode (memset of post-`next`
+  // bytes) so every node creation path (TryEmplaceInternal, TcParser,
+  // MapTestPeer, ...) observes a clean tag with no per-call-site setup.
+  uint8_t donated_flags;
 
   void* GetVoidKey() { return this + 1; }
   const void* GetVoidKey() const { return this + 1; }
@@ -658,9 +676,25 @@ class PROTOBUF_EXPORT UntypedMapBase {
     return AllocNode(SizeFromInfo(size_info));
   }
 
+  // v2.1: NodeBase now includes a donated_flags byte and the surrounding
+  // alignas(kMaxMessageAlignment) bumps its sizeof from 8 to 16. Map's
+  // Node sizes (e.g. Map<int,int>::Node = 24) are aligned to alignof(Node)
+  // = alignof(NodeBase) = 8, but not necessarily to sizeof(NodeBase) = 16,
+  // so the historical `node_size / sizeof(NodeBase)` arithmetic would
+  // under-allocate. Allocate in fixed 8-byte buckets (uint64_t) — these
+  // are independent of any future NodeBase sizeof change and match the
+  // node alignment exactly.
+  static constexpr size_t kNodeAllocUnit = sizeof(uint64_t);
+
   NodeBase* AllocNode(size_t node_size) {
-    PROTOBUF_ASSUME(node_size % sizeof(NodeBase) == 0);
-    return AllocFor<NodeBase>(alloc_).allocate(node_size / sizeof(NodeBase));
+    PROTOBUF_ASSUME(node_size % kNodeAllocUnit == 0);
+    NodeBase* node = reinterpret_cast<NodeBase*>(
+        AllocFor<uint64_t>(alloc_).allocate(node_size / kNodeAllocUnit));
+    // Zero the donated_flags byte (lives in NodeBase's alignment padding)
+    // so the lazy-promote hook in Map::iterator::operator*() never acts
+    // on uninitialised memory.
+    node->donated_flags = 0;
+    return node;
   }
 
   void DeallocNode(NodeBase* node, MapNodeSizeInfoT size_info) {
@@ -668,8 +702,9 @@ class PROTOBUF_EXPORT UntypedMapBase {
   }
 
   void DeallocNode(NodeBase* node, size_t node_size) {
-    PROTOBUF_ASSUME(node_size % sizeof(NodeBase) == 0);
-    AllocFor<NodeBase>(alloc_).deallocate(node, node_size / sizeof(NodeBase));
+    PROTOBUF_ASSUME(node_size % kNodeAllocUnit == 0);
+    AllocFor<uint64_t>(alloc_).deallocate(reinterpret_cast<uint64_t*>(node),
+                                          node_size / kNodeAllocUnit);
   }
 
   void DeleteTable(TableEntryPtr* table, map_index_t n) {
@@ -1291,6 +1326,11 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
     const_iterator(const const_iterator&) = default;
     const_iterator& operator=(const const_iterator&) = default;
 
+    // const_iterator does NOT promote a donated value to heap. Per INV-1,
+    // returning a `const value_type&` (i.e. `const std::pair<const Key,
+    // T>&`) is safe even when the contained string is in Donated state,
+    // because the caller cannot perform mutating operations on a const
+    // reference.
     reference operator*() const { return static_cast<Node*>(this->node_)->kv; }
     pointer operator->() const { return &(operator*()); }
 
@@ -1333,7 +1373,19 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
     iterator(const iterator&) = default;
     iterator& operator=(const iterator&) = default;
 
-    reference operator*() const { return static_cast<Node*>(this->node_)->kv; }
+    // v2.1: enforce INV-1 on the user-facing mutable reference path.
+    // If the mapped_type is std::string and the underlying node is still in
+    // Donated state, promote it to a heap-owned std::string BEFORE handing
+    // out the std::string& to user code. The same lazy-promote hook covers
+    // range-for `for (auto& kv : *map)`, operator[], at() and find()
+    // non-const overloads, all of which ultimately funnel through
+    // iterator::operator*().
+    reference operator*() const {
+      // todo 这里转合适吗？原来就是这么转的，应该没问题。
+      auto* node = static_cast<Node*>(this->node_);
+      Map::MaybePromoteDonatedValue(node, this->m_);
+      return node->kv;
+    }
     pointer operator->() const { return &(operator*()); }
 
     iterator& operator++() {
@@ -1382,6 +1434,7 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
   // Element access
   template <typename K = key_type>
   T& operator[](const key_arg<K>& key) ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    // todo 这里应该转成heap的
     return try_emplace(key).first->second;
   }
   template <
@@ -1389,6 +1442,7 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
       // Disable for integral types to reduce code bloat.
       typename = typename std::enable_if<!std::is_integral<K>::value>::type>
   T& operator[](key_arg<K>&& key) ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    // todo 这里应该转成heap的
     return try_emplace(std::forward<K>(key)).first->second;
   }
 
@@ -1403,7 +1457,46 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
   T& at(const key_arg<K>& key) ABSL_ATTRIBUTE_LIFETIME_BOUND {
     iterator it = find(key);
     ABSL_CHECK(it != end()) << "key not found: " << static_cast<Key>(key);
+    // todo 这里应该转成heap的
     return it->second;
+  }
+
+  // v2.1 hot-path opt-in accessor for std::string-valued maps.
+  //
+  // Returns a MaybeArenaStringAccessor over the value mapped to `key`,
+  // inserting an empty value if the key is absent. Unlike operator[] / at() /
+  // iterator dereference (which, per INV-1, PROMOTE a Donated value to a
+  // heap-owned std::string before exposing a mutable std::string&), this entry
+  // point does NOT promote: writes performed through the returned accessor go
+  // straight into arena memory, keeping the value Donated (INV-2).
+  //
+  // This is the Map counterpart of the single-field `mutable_xxx_accessor()`
+  // generated by protoc when `option cc_mutable_donated_string = true`; the
+  // generated `mutable_xxx_accessor(key)` funnels through here.
+  //
+  // Contract: callers must mutate the value ONLY through the returned accessor
+  // API (never via a raw std::string& obtained from operator[]/at()/iterator)
+  // for as long as they rely on the value staying Donated. With no arena the
+  // accessor transparently falls back to standard std::string semantics
+  // (INV-4).
+  template <typename K = key_type>
+  MaybeArenaStringAccessor MutableValueAccessor(const key_arg<K>& key)
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    static_assert(
+        std::is_same<mapped_type, std::string>::value,
+        "MutableValueAccessor is only available when the map value is "
+        "std::string");
+    // Ensure the entry exists. On an arena, try_emplace constructs the value
+    // in Donated state (init_donated_in_place + kValueDonatedBit) and does NOT
+    // promote (promotion only happens through iterator::operator*). With no
+    // arena it constructs a standard std::string.
+    this->try_emplace(key);
+    // Locate the node WITHOUT going through iterator::operator* (which would
+    // promote); read the value address directly off the node.
+    auto p = this->FindHelper(TS::ToView(key));
+    auto* node = static_cast<Node*>(p.node);
+    std::string* val_ptr = &node->kv.second;
+    return internal::wrap_existing_donated(this->arena(), val_ptr);
   }
 
   // Lookup
@@ -1415,10 +1508,12 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
   template <typename K = key_type>
   const_iterator find(const key_arg<K>& key) const
       ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    // todo 不能跟非const公用实现了
     return const_cast<Map*>(this)->find(key);
   }
   template <typename K = key_type>
   iterator find(const key_arg<K>& key) ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    // todo 这里要分配在heap
     auto res = this->FindHelper(TS::ToView(key));
     return iterator(static_cast<Node*>(res.node), this, res.bucket);
   }
@@ -1566,6 +1661,16 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
   struct Rank1 {};
   struct Rank0 : Rank1 {};
 
+  static constexpr uint8_t kValueDonatedBit = 0x1;
+  static constexpr uint8_t kKeyDonatedBit = 0x2;
+
+  // True iff the mapped_type / key_type is std::string. Only when this is
+  // true AND the map is on an arena does the donated path get exercised.
+  static constexpr bool kValueIsString =
+      std::is_same<mapped_type, std::string>::value;
+  static constexpr bool kKeyIsString =
+      std::is_same<key_type, std::string>::value;
+
   // Linked-list nodes, as one would expect for a chaining hash table.
   struct Node : Base::KeyNode {
     using key_type = Key;
@@ -1576,6 +1681,43 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
     }
     value_type kv;
   };
+
+
+  // v2.1 (INV-1): promote a donated value to a heap-owned std::string the
+  // first time a mutable reference is requested, and clear the tag. After
+  // promotion the std::string is registered with the arena cleanup list so
+  // its heap buffer is released when the arena is reset. Subsequent calls
+  // become no-ops because the tag is cleared.
+  //
+  // Defensive layering (against the very rare case of a stale/uninitialized
+  // tag surviving the AllocNode zero-init, e.g. legacy in-tree code paths):
+  //   - If the Map has no arena, donated state cannot legitimately exist
+  //     (INV-4). We silently clear the tag and return without touching the
+  //     std::string, so we never invoke promote_donated_to_heap on a
+  //     non-donated heap-owned std::string (which would leak its buffer).
+  static void MaybePromoteDonatedValue(Node* node, const internal::UntypedMapBase* m) {
+    if constexpr (kValueIsString) {
+      if ((node->donated_flags & kValueDonatedBit) != 0) {
+        // INV-4 defense: drop the suspicious tag without acting on it.
+        node->donated_flags &= static_cast<uint8_t>(~kValueDonatedBit);
+        Arena* arena = m->arena();
+        if (arena == nullptr) {
+          node->donated_flags &= static_cast<uint8_t>(~kValueDonatedBit);
+          return;
+        }
+        auto s = &node->kv.second;
+        internal::promote_donated_to_heap(&node->kv.second);
+        // Register destructor so the heap buffer is reclaimed when the
+        // arena is reset (the std::string control block itself lives in
+        // arena memory and is not heap-deleted, but its char buffer is now
+        // heap-owned).
+        arena->OwnDestructor(s);
+      }
+    } else {
+      (void)node;
+      (void)m;
+    }
+  }
 
   using Tree = internal::TreeForMap;
   using TreeIterator = typename Tree::iterator;
@@ -1614,16 +1756,71 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
     return insert(value_type(std::forward<Args>(args)...));
   }
 
+  // v2.1: apply zero-or-more constructor args to a freshly initialized
+  // Donated std::string. Fast paths route the args directly through
+  // MaybeArenaStringAccessor::assign overloads (no temporary heap
+  // std::string, content lands in arena buffer):
+  //
+  //   * no args                                  -> leave the empty Donated str
+  //   * 1 arg of (const std::string& / std::string&& / string_view /
+  //              const char*)                    -> single-arg assign overload
+  //   * 2 args of (const char*, size_t)          -> (data, size) overload
+  //
+  // For multi-arg std::string ctor patterns that lack a matching assign
+  // overload — most notably the fill ctor `(count, char)` used in tests
+  // like `m.try_emplace(k, 3, 'a')` — fall back to building a temporary
+  // std::string and routing through (data, size). This costs one heap
+  // alloc + memcpy on a rarely-used code path; accepting that cost keeps
+  // the user-facing API surface identical to upstream protobuf.
+  template <typename... Args>
+  PROTOBUF_ALWAYS_INLINE static void InitDonatedStringValue(Arena* arena,
+                                                            std::string* s,
+                                                            Args&&... args) {
+    if constexpr (sizeof...(Args) == 0) {
+      // Empty Donated string; nothing to do.
+      (void)arena;
+      (void)s;
+    } else if constexpr (sizeof...(Args) == 1) {
+      // 1-arg: assign already has overloads for string&/string&&/
+      // string_view/const char*.
+      internal::wrap_existing_donated(arena, s).assign(
+          std::forward<Args>(args)...);
+    } else if constexpr (sizeof...(Args) == 2 &&
+                         std::is_convertible_v<
+                             std::tuple_element_t<
+                                 0, std::tuple<std::decay_t<Args>...>>,
+                             const char*>) {
+      // 2-arg (const char*, size_t) fast path.
+      internal::wrap_existing_donated(arena, s).assign(
+          std::forward<Args>(args)...);
+    } else {
+      // Fallback for std::string ctors that lack a matching assign
+      // overload (e.g. (count, char), iterator pair). One unavoidable
+      // tmp string + memcpy; reachable only via test-style emplace with
+      // exotic args.
+      std::string tmp(std::forward<Args>(args)...);
+      internal::wrap_existing_donated(arena, s).assign(tmp.data(), tmp.size());
+    }
+  }
+
   template <typename K, typename... Args>
   std::pair<iterator, bool> TryEmplaceInternal(K&& k, Args&&... args) {
-    auto p = this->FindHelper(TS::ToView(k));
+    // Cache the view-form of the key once. `TS::ToView` materialises a
+    // cheap string_view (for std::string K), a by-value scalar (for
+    // scalar K), or a `const key_type&` (for other non-scalar K — e.g.
+    // MoveTestKey in unit tests). Bind via `const auto&` so that the
+    // reference variant does NOT trigger an extra copy of K
+    // (`auto` would decay `const K&` to `K`, accidentally invoking the
+    // copy ctor — caught by `MapImplTest.OperatorBracketRValue`).
+    const auto& k_view = TS::ToView(k);
+    auto p = this->FindHelper(k_view);
     // Case 1: key was already present.
     if (p.node != nullptr)
       return std::make_pair(
           iterator(static_cast<Node*>(p.node), this, p.bucket), false);
     // Case 2: insert.
     if (this->ResizeIfLoadIsOutOfRange(this->num_elements_ + 1)) {
-      p = this->FindHelper(TS::ToView(k));
+      p = this->FindHelper(k_view);
     }
     const auto b = p.bucket;  // bucket number
     // If K is not key_type, make the conversion to key_type explicit.
@@ -1631,20 +1828,74 @@ class Map : private internal::KeyMapBase<internal::KeyForBase<Key>> {
         std::is_same<typename std::decay<K>::type, key_type>::value, K&&,
         key_type>::type;
     Node* node = static_cast<Node*>(this->AllocNode(sizeof(Node)));
+    // donated_flags (if present in this specialization of Node) is already
+    // zero-initialised by UntypedMapBase::AllocNode, which memsets the
+    // post-NodeBase body.
+    Arena* arena = this->alloc_.arena();
 
-    // Even when arena is nullptr, CreateInArenaStorage is still used to
-    // ensure the arena of submessage will be consistent. Otherwise,
-    // submessage may have its own arena when message-owned arena is enabled.
-    // Note: This only works if `Key` is not arena constructible.
-    if (!internal::InitializeMapKey(const_cast<Key*>(&node->kv.first),
-                                    std::forward<K>(k), this->alloc_.arena())) {
-      Arena::CreateInArenaStorage(const_cast<Key*>(&node->kv.first),
-                                  this->alloc_.arena(),
-                                  static_cast<TypeToInit>(std::forward<K>(k)));
+    // -------------------- Key initialization --------------------
+    // For std::string key on arena: take the Donated path, which places the
+    // string control block on the node (already there) and stores the
+    // char buffer on the arena via the accessor's write API. No destructor
+    // is registered, so the buffer is reclaimed when the arena is reset.
+    //
+    // For all other cases (non-string key, or no-arena fallback) keep the
+    // existing behaviour. This preserves INV-4.
+    if constexpr (kKeyIsString) {
+      if (arena != nullptr) {
+        std::string* key_ptr = const_cast<std::string*>(
+            reinterpret_cast<const std::string*>(&node->kv.first));
+        // init_donated_in_place returns the ArenaStringAccessor that
+        // wraps (arena, key_ptr); chain .assign() directly so we avoid
+        // the redundant wrap_existing_donated round-trip.
+        // todo 返回的是iterator，只能在heap分配
+        internal::init_donated_in_place(arena, key_ptr)
+            .assign(k_view.data(), k_view.size());
+        node->donated_flags |= kKeyDonatedBit;
+      } else {
+        // Even when arena is nullptr, CreateInArenaStorage is still used to
+        // ensure the arena of submessage will be consistent. Otherwise,
+        // submessage may have its own arena when message-owned arena is
+        // enabled.
+        // Note: This only works if `Key` is not arena constructible.
+        if (!internal::InitializeMapKey(const_cast<Key*>(&node->kv.first),
+                                        std::forward<K>(k), arena)) {
+          Arena::CreateInArenaStorage(
+              const_cast<Key*>(&node->kv.first), arena,
+              static_cast<TypeToInit>(std::forward<K>(k)));
+        }
+      }
+    } else {
+      // Even when arena is nullptr, CreateInArenaStorage is still used to
+      // ensure the arena of submessage will be consistent. Otherwise,
+      // submessage may have its own arena when message-owned arena is
+      // enabled.
+      // Note: This only works if `Key` is not arena constructible.
+      if (!internal::InitializeMapKey(const_cast<Key*>(&node->kv.first),
+                                      std::forward<K>(k), arena)) {
+        Arena::CreateInArenaStorage(const_cast<Key*>(&node->kv.first), arena,
+                                    static_cast<TypeToInit>(std::forward<K>(k)));
+      }
     }
+
+    // -------------------- Value initialization --------------------
+    // For std::string value on arena: Donated path. Otherwise fall back.
     // Note: if `T` is arena constructible, `Args` needs to be empty.
-    Arena::CreateInArenaStorage(&node->kv.second, this->alloc_.arena(),
-                                std::forward<Args>(args)...);
+    if constexpr (kValueIsString) {
+      if (arena != nullptr) {
+        std::string* val_ptr =
+            reinterpret_cast<std::string*>(&node->kv.second);
+        internal::init_donated_in_place(arena, val_ptr);
+        InitDonatedStringValue(arena, val_ptr, std::forward<Args>(args)...);
+        node->donated_flags |= kValueDonatedBit;
+      } else {
+        Arena::CreateInArenaStorage(&node->kv.second, arena,
+                                    std::forward<Args>(args)...);
+      }
+    } else {
+      Arena::CreateInArenaStorage(&node->kv.second, arena,
+                                  std::forward<Args>(args)...);
+    }
 
     this->InsertUnique(b, node);
     ++this->num_elements_;

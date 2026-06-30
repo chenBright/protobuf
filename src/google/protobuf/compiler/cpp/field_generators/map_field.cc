@@ -211,6 +211,23 @@ void Map::GenerateAccessorDeclarations(io::Printer* p) const {
 
     public:
   )cc");
+  // ARENASTRING PATCH v2.1: hot-path donated accessor for std::string-valued
+  // maps. Returns a MaybeArenaStringAccessor so a write goes straight into
+  // arena memory without promoting the Donated value (see
+  // Map::MutableValueAccessor in map.h). Only emitted when the value type is
+  // string and the file opts in via cc_mutable_donated_string.
+  //
+  // The method name is built from a self-defined (non-annotated) substitution
+  // rather than the annotated `$name$`, so we do not emit a spurious gencode
+  // source annotation that would map this helper onto the field declaration.
+  if (val_->type() == FieldDescriptor::TYPE_STRING &&
+      field_->file()->options().cc_mutable_donated_string()) {
+    p->Emit({{"accessor_fn",
+              absl::StrCat("mutable_", field_->name(), "_accessor")}},
+            R"cc(
+              $pb$::MaybeArenaStringAccessor $accessor_fn$(const $Key$& key);
+            )cc");
+  }
 }
 
 void Map::GenerateInlineAccessorDefinitions(io::Printer* p) const {
@@ -243,6 +260,25 @@ void Map::GenerateInlineAccessorDefinitions(io::Printer* p) const {
       return _internal_mutable_$name_internal$();
     }
   )cc");
+  // ARENASTRING PATCH v2.1: definition of the hot-path donated accessor (see
+  // the matching declaration in GenerateAccessorDeclarations).
+  //
+  // The AccessorVerifier in message.cc requires that every tracked `$name$`
+  // used while building an accessor definition be paired with exactly one
+  // `$WeakDescriptorSelfPin$` AND one `$annotate_*$`. We therefore emit both
+  // (mirroring the standard `mutable_$name$()` accessor above), otherwise the
+  // verifier aborts with `Check failed: !needs_annotate_`.
+  if (val_->type() == FieldDescriptor::TYPE_STRING &&
+      field_->file()->options().cc_mutable_donated_string()) {
+    p->Emit(R"cc(
+      inline $pb$::MaybeArenaStringAccessor $Msg$::mutable_$name$_accessor(
+          const $Key$& key) ABSL_ATTRIBUTE_LIFETIME_BOUND {
+        $WeakDescriptorSelfPin$;
+        $annotate_mutable$;
+        return _internal_mutable_$name_internal$()->MutableValueAccessor(key);
+      }
+    )cc");
+  }
 }
 
 void Map::GenerateSerializeWithCachedSizesToArray(io::Printer* p) const {

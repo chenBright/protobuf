@@ -11,7 +11,12 @@ build:asan --dynamic_mode=off
 build:msan --config=san-common --copt=-fsanitize=memory --linkopt=-fsanitize=memory
 build:msan --copt=-fsanitize-memory-track-origins
 build:msan --copt=-fsanitize-memory-use-after-dtor
-build:msan --action_env=MSAN_OPTIONS=poison_in_dtor=1
+# See the matching block in //.bazelrc for the rationale. fast_unwind_on_fatal=1
+# stops MSan from re-entering an MSan-instrumented libunwind while printing a
+# fatal report (which manifested as a stack-overflow in the RepeatedField
+# "PoisonsMemory*" death tests). Set for both build and test execution.
+build:msan --action_env=MSAN_OPTIONS=poison_in_dtor=1:fast_unwind_on_fatal=1
+build:msan --test_env=MSAN_OPTIONS=poison_in_dtor=1:fast_unwind_on_fatal=1
 
 # Use our instrumented LLVM libc++ in Kokoro.
 build:docker-msan --config=msan
