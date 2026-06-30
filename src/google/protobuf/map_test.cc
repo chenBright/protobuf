@@ -88,6 +88,10 @@ TEST(MapTest, CopyConstructIntegers) {
   EXPECT_EQ(map2[2], 3);
 }
 
+void testmap(const Map<std::string, std::string>& map) {
+  map.find("1");
+}
+
 TEST(MapTest, CopyConstructStrings) {
   auto token = internal::InternalVisibilityForTesting{};
   using MapType = Map<std::string, std::string>;
@@ -99,6 +103,9 @@ TEST(MapTest, CopyConstructStrings) {
   ASSERT_EQ(map1.size(), 2);
   EXPECT_EQ(map1["1"], "2");
   EXPECT_EQ(map1["2"], "3");
+  map1.find("1");
+
+  testmap(map1);
 
   MapType map2(token, nullptr, original);
   ASSERT_EQ(map2.size(), 2);

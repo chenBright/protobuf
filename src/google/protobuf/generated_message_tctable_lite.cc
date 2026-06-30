@@ -2597,10 +2597,24 @@ PROTOBUF_ALWAYS_INLINE inline void TcParser::InitializeMapNodeEntry(
     case MapTypeCard::k64:
       memset(obj, 0, sizeof(uint64_t));
       break;
-    case MapTypeCard::kString:
-      Arena::CreateInArenaStorage(reinterpret_cast<std::string*>(obj),
-                                  map.arena());
+    case MapTypeCard::kString: {
+      // ARENASTRING PATCH v2.1: when the map lives on an arena, construct
+      // the in-node std::string in Donated state. The buffer will later
+      // be written into arena memory by ReadArenaString in
+      // ParseOneMapEntry, skipping the heap allocation that std::string
+      // would otherwise do.
+      //
+      // We deliberately do NOT register a destructor in the donated path:
+      // the buffer is reclaimed when the arena is reset, and ClearTable
+      // / DestroyNode skip ~basic_string() on arena maps anyway.
+      auto* str = reinterpret_cast<std::string*>(obj);
+      if (map.arena() != nullptr) {
+        init_donated_in_place(map.arena(), str);
+      } else {
+        Arena::CreateInArenaStorage(str, map.arena());
+      }
       break;
+    }
     case MapTypeCard::kMessage:
       aux[1].create_in_arena(map.arena(), reinterpret_cast<MessageLite*>(obj));
       break;
@@ -2712,8 +2726,25 @@ const char* TcParser::ParseOneMapEntry(
           const int size = ReadSize(&ptr);
           if (PROTOBUF_PREDICT_FALSE(ptr == nullptr)) return nullptr;
           std::string* str = reinterpret_cast<std::string*>(obj);
-          ptr = ctx->ReadString(ptr, size, str);
-          if (PROTOBUF_PREDICT_FALSE(ptr == nullptr)) return nullptr;
+          // ARENASTRING PATCH v2.1: on an arena, route the wire bytes
+          // straight into arena memory through ReadArenaString (avoids
+          // the heap allocation std::string would do), and flip the
+          // corresponding donated tag bit on NodeBase (value=bit0,
+          // key=bit1). INV-1 (lazy promote in
+          // Map::iterator::operator*()) makes sure user-facing mutable
+          // refs are promoted before any std::string mutating API is
+          // called on these donated strings.
+          if (arena != nullptr) {
+            ptr = ctx->ReadArenaString(
+                ptr, size, ArenaStringAccessor(arena, str));
+            if (PROTOBUF_PREDICT_FALSE(ptr == nullptr)) return nullptr;
+            // Mirror Map<K,V>::Node::donated_flags bit layout:
+            //   bit 0 = value donated, bit 1 = key donated.
+            node->donated_flags |= (inner_tag == key_tag) ? 0x2 : 0x1;
+          } else {
+            ptr = ctx->ReadString(ptr, size, str);
+            if (PROTOBUF_PREDICT_FALSE(ptr == nullptr)) return nullptr;
+          }
           bool do_utf8_check = map_info.fail_on_utf8_failure;
 #ifndef NDEBUG
           do_utf8_check |= map_info.log_debug_utf8_failure;

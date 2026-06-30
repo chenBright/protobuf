@@ -44,9 +44,26 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: Default, flags: "" }
-          - { name: ASan, flags: "--config=asan" }
-          - { name: UBSan, flags: "--config=ubsan" }
+          # GCC builds.
+          - { name: "GCC Default", cc: gcc, cxx: g++, flags: "" }
+          - { name: "GCC ASan",    cc: gcc, cxx: g++, flags: "--config=asan" }
+          - { name: "GCC TSan",    cc: gcc, cxx: g++, flags: "--config=tsan" }
+          - { name: "GCC UBSan",   cc: gcc, cxx: g++, flags: "--config=ubsan" }
+          # Clang builds.
+          - { name: "Clang Default", cc: clang, cxx: clang++, flags: "" }
+          - { name: "Clang ASan",    cc: clang, cxx: clang++, flags: "--config=asan" }
+          # MSan is only supported by Clang and additionally needs an
+          # MSan-instrumented libc++. The stock runner only ships an
+          # uninstrumented libstdc++, which makes MSan report false positives in
+          # every test. We therefore build an instrumented libc++ on the fly in
+          # the dedicated steps below (keyed off the "Clang MSan" name) and link
+          # against it. This mirrors the instrumented libc++ that upstream CI
+          # gets from Google's private "sanitize" container image.
+          - { name: "Clang MSan",    cc: clang, cxx: clang++, flags: "--config=msan" }
+          - { name: "Clang TSan",    cc: clang, cxx: clang++, flags: "--config=tsan" }
+          # UBSan with Clang needs the Clang-only -fno-sanitize=function flag,
+          # which lives in the ubsan-clang config (see .bazelrc).
+          - { name: "Clang UBSan",   cc: clang, cxx: clang++, flags: "--config=ubsan --config=ubsan-clang" }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,11 +82,121 @@ jobs:
       - name: Show Bazel version
         run: bazel version
 
-      - name: Run C++ unit tests
+      # MSan only produces meaningful results when *all* code, including the C++
+      # standard library, is instrumented. The stock runner only has an
+      # uninstrumented libstdc++, so we build an MSan-instrumented libc++ here
+      # (the same thing that is baked into Google's private "sanitize" container
+      # image used by upstream CI). The build is cached, so it only happens once
+      # per LLVM version.
+      - name: Cache instrumented libc++ (MSan)
+        if: matrix.config.name == 'Clang MSan'
+        id: cache-libcxx-msan
+        uses: actions/cache@v4
+        with:
+          # Built once and reused across runs. Afterwards only the *headers* are
+          # copied into the system path (/usr) so that Clang's -stdlib=libc++
+          # finds them natively (no -isystem / CPLUS_INCLUDE_PATH tricks that
+          # would leak into the exec/host actions building protoc). The *libs*
+          # are consumed straight from this cached prefix via -L / -rpath, so the
+          # path must stay stable across runs.
+          path: ~/libcxx_msan
+          key: libcxx-msan-${{ runner.os }}-llvm-18.1.8
+
+      - name: Build instrumented libc++ (MSan)
+        if: matrix.config.name == 'Clang MSan' && steps.cache-libcxx-msan.outputs.cache-hit != 'true'
         run: |
+          set -eux
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake
+          git clone --depth=1 --branch llvmorg-18.1.8 \
+            https://github.com/llvm/llvm-project.git llvm-project
+          # Build libc++/libc++abi/libunwind with MSan instrumentation. The
+          # extra -fsanitize-memory-use-after-dtor matches the project's msan
+          # config in ci/common.bazelrc so the runtime and the library agree.
+          cmake -G Ninja -S llvm-project/runtimes -B build-libcxx-msan \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
+            -DLLVM_USE_SANITIZER=MemoryWithOrigins \
+            -DCMAKE_C_FLAGS="-fsanitize-memory-use-after-dtor" \
+            -DCMAKE_CXX_FLAGS="-fsanitize-memory-use-after-dtor" \
+            -DCMAKE_INSTALL_PREFIX="$HOME/libcxx_msan"
+          ninja -C build-libcxx-msan install-cxx install-cxxabi install-unwind
+          # Only the install prefix is needed afterwards; drop the build tree.
+          rm -rf llvm-project build-libcxx-msan
+
+      # Install only the instrumented libc++ *headers* into the standard system
+      # location so that Clang's -stdlib=libc++ finds them natively. This runs on
+      # every MSan job, even on a cache hit, because /usr is not part of the
+      # cached tree. Headers are harmless to host/exec actions: those default to
+      # libstdc++ (no -stdlib=libc++) and never look into /usr/include/c++/v1.
+      #
+      # The instrumented *libraries* are deliberately NOT copied into the system
+      # lib dirs. Doing so would let uninstrumented host/exec binaries (protoc,
+      # etc.) load an MSan-instrumented libc++/libunwind at runtime and crash for
+      # lack of an MSan runtime. Instead the libs stay in $HOME/libcxx_msan/lib
+      # and are pulled in explicitly via -L / -rpath in the test step below,
+      # exactly like upstream's docker-msan config (see ci/common.bazelrc).
+      - name: Install instrumented libc++ headers (MSan)
+        if: matrix.config.name == 'Clang MSan'
+        run: |
+          set -eux
+          sudo rm -rf /usr/include/c++/v1
+          sudo cp -a "$HOME/libcxx_msan/include/c++/v1" /usr/include/c++/v1
+          # libc++abi/libunwind headers (cxxabi.h, etc.) if they were installed
+          # outside the c++/v1 directory.
+          sudo find "$HOME/libcxx_msan/include" -maxdepth 1 -name '*.h' \
+            -exec cp -a {} /usr/include/ \;
+
+      - name: Run C++ unit tests
+        env:
+          CC: ${{ matrix.config.cc }}
+          CXX: ${{ matrix.config.cxx }}
+          CONFIG_NAME: ${{ matrix.config.name }}
+        run: |
+          # For the MSan config, build and link against the instrumented libc++.
+          # This mirrors upstream's docker-msan config (ci/common.bazelrc):
+          #   * Headers were installed into the standard system path by the
+          #     previous step, so -stdlib=libc++ finds them with no -isystem.
+          #   * The instrumented libraries stay in their private install prefix
+          #     ($HOME/libcxx_msan/lib); -L resolves them at link time and
+          #     -Wl,-rpath bakes that path into the binary so the *runtime*
+          #     loader also picks them up instead of falling back to the system's
+          #     uninstrumented libstdc++ (the cause of MSan's false positives).
+          #   * -L / -rpath are plain linker flags and therefore work regardless
+          #     of whether Bazel drives the link with `clang` or `clang++` (it
+          #     uses $CC = clang), unlike -stdlib which a C driver may ignore.
+          # All flags go through --cxxopt / --linkopt (target config only), so
+          # the C sources in utf8_range and the exec/host actions that build
+          # protoc keep using the system libstdc++ and still build correctly.
+          MSAN_FLAGS=""
+          if [ "$CONFIG_NAME" = "Clang MSan" ]; then
+            # In addition to linking the instrumented libc++ (see comment above),
+            # exclude the conformance test from the MSan run. conformance_test is
+            # a fork()+execv() harness whose reader spins up a std::async thread
+            # per pipe read (conformance_test_runner.cc); under MSan it crashes
+            # with a raw "Segmentation fault (core dumped)" inside the
+            # sanitizer / instrumented-libc++ / libunwind runtime (note: there is
+            # NO MSan "use-of-uninitialized-value" report), i.e. it is a
+            # sanitizer-infrastructure issue with this fork+threads harness, not
+            # a real protobuf memory bug. We filter it out via the "conformance"
+            # tag that conformance_test() attaches (see conformance/defs.bzl).
+            # All other configs (GCC/ASan/TSan/UBSan) keep running it.
+            MSAN_FLAGS="\
+              --cxxopt=-stdlib=libc++ \
+              --linkopt=-stdlib=libc++ \
+              --linkopt=-L$HOME/libcxx_msan/lib \
+              --linkopt=-Wl,-rpath,$HOME/libcxx_msan/lib \
+              --linkopt=-lc++abi \
+              --test_tag_filters=-conformance"
+          fi
           bazel test \
+            --repo_env=CC=${{ matrix.config.cc }} \
+            --repo_env=CXX=${{ matrix.config.cxx }} \
             --keep_going \
             --test_output=errors \
             --verbose_failures \
             ${{ matrix.config.flags }} \
+            ${MSAN_FLAGS} \
             //src/... //third_party/utf8_range/...
